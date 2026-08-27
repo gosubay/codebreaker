@@ -1,0 +1,802 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Codebreaker — a Mastermind solver, and Knuth's minimax made visible</title>
+<meta name="author" content="Galvin Bay">
+<meta name="description" content="Play Mastermind against Knuth's 1977 minimax solver and watch all 1,296 possible codes collapse. Wordle's ancestor, with the algorithm shown rather than described.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Codebreaker — Knuth's minimax made visible">
+<meta property="og:description" content="Mastermind, 1,296 possible codes, and the 1977 algorithm that cracks any of them in five guesses.">
+<meta property="og:image" content="og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --board:#171C2E; --board-deep:#10141F; --panel:#1F2639; --panel-hi:#28304A;
+  --rule:#333C5C; --ink:#EAECF5; --ink-dim:#8791B0; --ink-faint:#5D6684; --hot:#FF6B4A;
+  --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --gbar:96px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--board);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+button{font-family:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+
+/* ═══ MOBILE FIRST ═══ */
+.wrap{max-width:1180px;margin:0 auto;padding:16px 14px calc(var(--gbar) + env(safe-area-inset-bottom,0px))}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding-bottom:12px;border-bottom:1px solid var(--rule);margin-bottom:16px}
+h1{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.035em;margin:0;line-height:.95}
+h1 em{font-style:normal;color:var(--ink-faint)}
+.sub{display:none}
+.tally{display:flex;gap:16px;font-family:var(--mono);flex:none}
+.tally div{text-align:right}
+.tally .n{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.tally .k{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px;font-family:var(--body);font-weight:600}
+.tally .n.live{color:var(--hot)}
+
+.grid{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:14px}
+.ttl{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;margin:0 0 11px}
+
+/* board */
+.board{background:var(--board-deep);border-radius:9px;padding:9px;display:flex;flex-direction:column;gap:5px}
+.row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:6px}
+.row.now{background:var(--panel-hi);box-shadow:inset 0 0 0 1px var(--rule)}
+.row .idx{font-family:var(--mono);font-size:11px;color:var(--ink-faint);width:13px}
+.pegs{display:flex;gap:7px}
+.peg{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 -2px 3px rgba(0,0,0,.35),inset 0 2px 2px rgba(255,255,255,.22)}
+.peg.empty{background:#0A0D16;box-shadow:inset 0 2px 4px rgba(0,0,0,.7);border:1px solid #262E45}
+.peg.slot{cursor:pointer}
+.peg.slot.sel{border:2px solid var(--hot)}
+.fb{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-left:auto}
+.fp{width:9px;height:9px;border-radius:50%;background:#0A0D16;box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
+.fp.b{background:#F5F7FF}
+.fp.w{background:transparent;box-shadow:inset 0 0 0 1.5px #7F8AAB}
+.row.win{background:rgba(79,191,127,.12);box-shadow:inset 0 0 0 1px rgba(79,191,127,.45)}
+
+.btn{background:var(--panel-hi);border:1px solid var(--rule);border-radius:8px;padding:11px 13px;
+  font-size:13.5px;font-weight:500;min-height:44px;transition:background .12s,border-color .12s}
+.btn:disabled{opacity:.34;cursor:default}
+.btn.go{background:var(--hot);border-color:var(--hot);color:#1A0A05;font-weight:600}
+.btn.sm{padding:9px 11px;font-size:12px;min-height:40px}
+.btn.on{background:var(--hot);border-color:var(--hot);color:#1A0A05;font-weight:600}
+.btnrow{display:flex;gap:7px;margin-top:8px}
+.btnrow .btn{flex:1}
+@media(hover:hover){
+  .btn:hover:not(:disabled){background:#323C5C;border-color:#46527A}
+  .btn.go:hover:not(:disabled){background:#FF7F62;border-color:#FF7F62}
+  .btn.on:hover:not(:disabled){background:#FF7F62;border-color:#FF7F62}
+}
+
+/* sticky guess bar (mobile) */
+.gbar{position:fixed;left:0;right:0;bottom:0;z-index:20;
+  background:rgba(23,28,46,.97);backdrop-filter:blur(10px);
+  border-top:1px solid var(--rule);
+  padding:9px 14px calc(9px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:9px}
+.picker{display:flex;gap:7px;flex:1;justify-content:space-between}
+.picker .peg{width:44px;height:44px;cursor:pointer;flex:none}
+.gbar .btn{min-width:88px;flex:none}
+
+/* deduction grid */
+.pgrid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:6px 0;align-items:center}
+.phead{font-family:var(--mono);font-size:10px;color:var(--ink-faint);text-align:center;padding-bottom:5px}
+.pname{font-size:13px;font-weight:600;padding-right:14px;white-space:nowrap;color:#A6AEC8;
+  transition:color .35s,opacity .35s,text-shadow .35s}
+.pname.dead{color:var(--ink-faint);opacity:.4;text-decoration:line-through;text-decoration-thickness:1.5px}
+.pcell{display:flex;justify-content:center;padding:2px 0}
+.pcell i{width:17px;height:17px;border-radius:50%;display:block;
+  transition:background .35s,box-shadow .35s,opacity .35s,filter .35s,transform .25s}
+.pcell.dead i{filter:saturate(.08) brightness(.55);opacity:.4;transform:scale(.62)}
+.pcell.sure i{transform:scale(1.15)}
+.pkey{font-size:11px;color:var(--ink-faint);margin-top:12px;line-height:1.7}
+.pkey b{color:var(--ink-dim);font-weight:600}
+.facts{margin-top:13px;border-top:1px solid var(--rule);padding-top:12px;display:flex;flex-direction:column;gap:7px}
+.fact{font-size:13px;color:var(--ink-dim);display:flex;gap:8px;align-items:baseline}
+.fact::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--ink-faint);flex:none;transform:translateY(-3px)}
+.fact.key{color:var(--ink)}
+.fact.key::before{background:var(--hot)}
+
+/* field */
+.fieldbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--ink-dim);align-items:center;flex-wrap:wrap}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+canvas{display:block;width:100%;height:auto;border-radius:9px;background:var(--board-deep)}
+#chips{display:none;flex-wrap:wrap;gap:7px;padding:12px;background:var(--board-deep);border-radius:9px;align-content:flex-start}
+.chip{display:flex;gap:3px;padding:5px 6px;background:#161B29;border:1.5px solid #2C3550;border-radius:8px;
+  animation:pop .34s cubic-bezier(.2,.9,.3,1) both}
+.chip span{width:14px;height:14px;border-radius:50%;box-shadow:inset 0 -1px 2px rgba(0,0,0,.35)}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+
+/* histogram — MOBILE: horizontal rows */
+.hcap{font-size:12.5px;color:var(--ink-dim);margin:0 0 10px}
+.hcap b{color:var(--hot);font-family:var(--mono)}
+.rows{display:flex;flex-direction:column;gap:4px}
+.brow{display:flex;align-items:center;gap:9px;padding:3px 5px;border-radius:6px;cursor:pointer}
+.brow.pin{background:var(--panel-hi);box-shadow:inset 0 0 0 1px var(--rule)}
+.rlab{display:flex;gap:2px;width:42px;flex:none;justify-content:flex-start}
+.rlab span{width:7px;height:7px;border-radius:50%}
+.rlab .b{background:#F5F7FF}
+.rlab .w{box-shadow:inset 0 0 0 1.2px #7F8AAB}
+.rtrack{flex:1;height:15px;background:#1A2033;border-radius:4px;overflow:hidden}
+.rfill{height:100%;background:#3C4767;border-radius:4px;transition:width .3s,background .15s}
+.brow.max .rfill{background:var(--hot)}
+.brow.act .rfill{background:#FFFFFF}
+.brow.zero .rfill{background:#232B40}
+.rnum{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);width:34px;text-align:right;flex:none}
+.brow.max .rnum{color:var(--hot);font-weight:700}
+.bars{display:none}
+.pinnote{font-size:12.5px;color:var(--ink);margin-top:11px;padding:9px 11px;background:var(--panel-hi);
+  border-radius:8px;border-left:2px solid var(--hot);display:none}
+.pinnote.show{display:block}
+.pinnote .il{display:inline-flex;gap:2px;vertical-align:-2px;margin:0 3px}
+.pinnote .il span{width:9px;height:9px;border-radius:50%}
+.pinnote .il .b{background:#F5F7FF}
+.pinnote .il .w{box-shadow:inset 0 0 0 1.2px #7F8AAB}
+
+.scrub{margin-top:16px}
+.scrubhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.candidate{display:flex;align-items:center;gap:9px}
+.candidate .peg{width:22px;height:22px}
+.rank{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim)}
+.worst{font-family:var(--mono);font-size:12.5px}
+.worst b{color:var(--hot);font-size:17px}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:28px}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:linear-gradient(90deg,var(--hot) 0%,#495780 100%);border-radius:3px}
+input[type=range]::-moz-range-track{height:6px;background:linear-gradient(90deg,var(--hot) 0%,#495780 100%);border-radius:3px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--ink);margin-top:-9px;cursor:grab;border:3px solid var(--board);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--ink);cursor:grab;border:3px solid var(--board)}
+.jump{display:flex;gap:7px;margin-top:8px}
+.jump .btn{flex:1}
+
+.coach{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--hot);border-radius:10px;padding:14px 15px}
+.coach p{margin:0;font-size:14px}
+.coach p+p{margin-top:8px;color:var(--ink-dim);font-size:13px}
+.coach .inline{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
+.coach .inline span{width:16px;height:16px;border-radius:50%}
+.coach.good{border-left-color:#4FBF7F}
+.coach.bad{border-left-color:#F2A03D}
+.num{font-family:var(--mono);font-weight:700}
+.controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.controls .btn{flex:1}
+.spacer{display:none}
+
+#load{position:fixed;inset:0;background:var(--board);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:60}
+#load .lt{font-family:var(--mono);font-size:12px;color:var(--ink-dim);letter-spacing:.05em}
+#load .track{width:210px;height:3px;background:var(--panel-hi);border-radius:2px;overflow:hidden}
+#load .fill{height:100%;width:0;background:var(--hot);transition:width .1s linear}
+
+/* ═══ DESKTOP ═══ */
+@media(min-width:881px){
+  :root{--gbar:0px}
+  .wrap{padding:20px 18px 40px}
+  header{gap:16px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:20px}
+  h1{font-size:clamp(26px,4.4vw,40px)}
+  .sub{display:block;color:var(--ink-dim);font-size:12.5px;margin-top:5px;max-width:46ch}
+  .tally{gap:22px}
+  .tally .n{font-size:26px}
+  .tally .k{font-size:9.5px;letter-spacing:.14em}
+  body{font-size:14px}
+
+  .grid{display:grid;grid-template-columns:302px 1fr;gap:20px;align-items:start;
+    grid-template-areas:"board field" "know hist" "coach coach" "ctrl ctrl"}
+  .a-board{grid-area:board}
+  .a-know{grid-area:know}
+  .a-field{grid-area:field}
+  .a-hist{grid-area:hist}
+  .a-coach{grid-area:coach}
+  .a-ctrl{grid-area:ctrl}
+  .panel{padding:15px}
+
+  .peg{width:22px;height:22px}
+  .pegs{gap:5px}
+  .row{gap:9px;padding:5px 7px}
+  .fp{width:8px;height:8px}
+  .btn{padding:8px 12px;font-size:12.5px;min-height:0}
+  .btn.sm{padding:6px 9px;font-size:11px;min-height:0}
+  .btnrow{gap:6px;margin-top:6px}
+
+  .gbar{position:static;background:none;backdrop-filter:none;border-top:0;padding:0;
+    display:block;margin-top:13px}
+  .picker{gap:6px;margin:0 0 10px;justify-content:center}
+  .picker .peg{width:28px;height:28px}
+  .gbar .btn{min-width:0;width:100%}
+  .gbar .btnrow{display:flex}
+
+  .pname{font-size:12px;padding-right:12px}
+  .pcell i{width:15px;height:15px}
+  .pgrid{gap:4px 0}
+  .pkey{font-size:10.5px}
+  .fact{font-size:12.5px}
+
+  /* histogram — DESKTOP: vertical bars */
+  .rows{display:none}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:132px;margin:6px 0 0}
+  .bcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;min-width:0}
+  .bar{width:100%;border-radius:3px 3px 0 0;background:#3C4767;transition:background .12s;min-height:2px}
+  .bcol.max .bar{background:var(--hot)}
+  .bcol.act .bar{background:#FFFFFF}
+  .bcol.zero .bar{background:#232B40}
+  .bnum{font-family:var(--mono);font-size:9.5px;text-align:center;color:var(--ink-faint);margin-bottom:3px;height:12px}
+  .bcol.max .bnum{color:var(--hot);font-weight:700}
+  .blabels{display:flex;gap:3px;margin-top:6px}
+  .blab{flex:1;display:flex;justify-content:center;gap:1.5px;min-width:0}
+  .blab span{width:5px;height:5px;border-radius:50%}
+  .blab .b{background:#F5F7FF}
+  .blab .w{box-shadow:inset 0 0 0 1px #7F8AAB}
+
+  .candidate .peg{width:19px;height:19px}
+  input[type=range]{height:20px}
+  input[type=range]::-webkit-slider-thumb{width:15px;height:15px;margin-top:-5px;border-width:2px}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-width:2px}
+  .controls .btn{flex:none}
+  .spacer{display:block;flex:1}
+  .coach p{font-size:13.5px}
+}
+@media(min-width:881px) and (hover:hover){
+  .bcol:hover .bar{background:#5A6892}
+  .picker .peg:hover{transform:translateY(-2px)}
+  .picker .peg{transition:transform .12s}
+}
+footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
+  display:flex;flex-direction:column;gap:5px}
+.fname{font-size:12.5px;color:var(--ink-dim);font-weight:600}
+.fname a{color:var(--hot);text-decoration:none}
+.fname a:hover{text-decoration:underline}
+.fmeta{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.02em}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="load">
+  <div class="lt">Building the outcome table…</div>
+  <div class="track"><div class="fill" id="lf"></div></div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Codebreaker <em>/ minimax</em></h1>
+      <div class="sub">The board game Mastermind, and Knuth's 1977 rule that cracks any of its 1,296 codes in five guesses.</div>
+    </div>
+    <div class="tally">
+      <div><div class="n" id="tTurn">1</div><div class="k">Guess</div></div>
+      <div><div class="n live" id="tLeft">1296</div><div class="k">Left</div></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="panel a-board">
+      <div class="ttl">The board</div>
+      <div class="board" id="board"></div>
+      <div class="gbar">
+        <div class="picker" id="picker"></div>
+        <button class="btn go" id="bPlay" disabled>Play</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn sm" id="bTake">Use suggestion</button>
+        <button class="btn sm" id="bClear">Clear</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn sm" id="bAuto">Solver plays</button>
+        <button class="btn sm" id="bPeek">Show code</button>
+      </div>
+    </div>
+
+    <div class="coach a-coach" id="coach"><p>Loading…</p></div>
+
+    <div class="panel a-field">
+      <div class="fieldbar">
+        <div class="ttl" style="margin:0" id="fieldTtl">Every code still alive</div>
+        <div class="legend">
+          <span><i style="background:var(--hot)"></i>largest group</span>
+          <button class="btn sm" id="bSort">Group by outcome</button>
+        </div>
+      </div>
+      <canvas id="cv"></canvas>
+      <div id="chips"></div>
+    </div>
+
+    <div class="panel a-hist">
+      <div class="ttl">What this guess would do to them</div>
+      <p class="hcap" id="hcap"></p>
+      <div class="rows" id="rows"></div>
+      <div class="bars" id="bars"></div>
+      <div class="blabels" id="blabels"></div>
+      <div class="pinnote" id="pinnote"></div>
+      <div class="scrub">
+        <div class="scrubhead">
+          <div class="candidate">
+            <div class="pegs" id="candPegs"></div>
+            <div class="rank" id="candRank"></div>
+          </div>
+          <div class="worst">worst case <b id="candWorst">–</b> left</div>
+        </div>
+        <input type="range" id="slider" min="0" max="1295" value="0">
+        <div class="jump">
+          <button class="btn sm" id="jBest">Best</button>
+          <button class="btn sm" id="jMid">Middling</button>
+          <button class="btn sm" id="jWorst">Worst</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel a-know">
+      <div class="ttl">What you know</div>
+      <div class="pgrid" id="pgrid"></div>
+      <div class="pkey">
+        <b>Glowing dot</b> — that colour is locked to that slot.<br>
+        <b>Glowing word</b> — that colour is in the code, slot unknown.<br>
+        <b>Faded</b> — ruled out.
+      </div>
+      <div class="facts" id="facts"></div>
+    </div>
+
+    <div class="controls a-ctrl">
+      <button class="btn sm" id="bBack">◀ Back</button>
+      <button class="btn sm" id="bFwd">Forward ▶</button>
+      <div class="spacer"></div>
+      <button class="btn sm" id="bNew">New code</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="fname">Galvin Bay 2026 &middot; <a href="https://instagram.com/heygalvinbay" target="_blank" rel="noopener">@heygalvinbay</a></div>
+    <div class="fmeta">Algorithm: Knuth, 1977 &mdash; cracks any code in five guesses</div>
+    <div class="fmeta">4 pegs &middot; 6 colours &middot; 1,296 possible codes</div>
+  </footer>
+</div>
+
+
+<script>
+"use strict";
+const N=1296, CHIP_LIMIT=60;
+const PEGC =['#E8514B','#F2A03D','#F0DF5E','#4FBF7F','#4A9BE8','#B57BE8'];
+const NEONC=['#FF7A6E','#FFBC3A','#FFF56B','#3DFFA6','#5FD9FF','#D79BFF'];
+const GLOW =['255,122,110','255,188,58','255,245,107','61,255,166','95,217,255','215,155,255'];
+const CNAME=['Red','Orange','Yellow','Green','Blue','Purple'];
+
+const MQ=matchMedia('(max-width:880px)');
+let narrow=MQ.matches;
+
+const DIG=new Uint8Array(N*4);
+for(let i=0;i<N;i++){let v=i;for(let s=3;s>=0;s--){DIG[i*4+s]=v%6;v=(v/6)|0;}}
+const digits=i=>[DIG[i*4],DIG[i*4+1],DIG[i*4+2],DIG[i*4+3]];
+
+const FB=[],FBI=new Int8Array(25).fill(-1);
+for(let b=0;b<=4;b++)for(let w=0;w+b<=4;w++){
+  if(b===3&&w===1)continue; if(b===4&&w>0)continue;
+  FBI[b*5+w]=FB.length; FB.push({b:b,w:w});
+}
+const NB=FB.length, SOLVED=FBI[20];
+
+function feedback(a,c){
+  let bl=0; const ca=[0,0,0,0,0,0], cb=[0,0,0,0,0,0];
+  for(let i=0;i<4;i++){const x=DIG[a*4+i],y=DIG[c*4+i]; if(x===y)bl++; else{ca[x]++;cb[y]++;}}
+  let wh=0; for(let k=0;k<6;k++) wh+=Math.min(ca[k],cb[k]);
+  return FBI[bl*5+wh];
+}
+const TABLE=new Uint8Array(N*N);
+let buildRow=0;
+(function buildChunk(){
+  const end=Math.min(N,buildRow+80);
+  for(let i=buildRow;i<end;i++) for(let j=i;j<N;j++){const f=feedback(i,j);TABLE[i*N+j]=f;TABLE[j*N+i]=f;}
+  buildRow=end;
+  document.getElementById('lf').style.width=(buildRow/N*100)+'%';
+  if(buildRow<N) requestAnimationFrame(buildChunk);
+  else{ document.getElementById('load').style.display='none'; newGame(); }
+})();
+
+function rankAll(cands){
+  const out=new Array(N), counts=new Int32Array(NB), inSet=new Uint8Array(N);
+  for(let k=0;k<cands.length;k++) inSet[cands[k]]=1;
+  for(let g=0;g<N;g++){
+    counts.fill(0); const base=g*N; let worst=0;
+    for(let k=0;k<cands.length;k++){const v=++counts[TABLE[base+cands[k]]]; if(v>worst)worst=v;}
+    out[g]={g:g,worst:worst,inSet:inSet[g]};
+  }
+  out.sort(function(a,b){return a.worst-b.worst||b.inSet-a.inSet||a.g-b.g;});
+  return out;
+}
+function bucketsFor(g,cands){
+  const bk=[]; for(let i=0;i<NB;i++) bk.push([]);
+  const base=g*N;
+  for(let k=0;k<cands.length;k++) bk[TABLE[base+cands[k]]].push(cands[k]);
+  return bk;
+}
+function el(t,cls,txt){const e=document.createElement(t);if(cls)e.className=cls;if(txt!==undefined&&txt!=='')e.textContent=txt;return e;}
+function fbIcons(i,cls){
+  const L=el('div',cls);
+  for(let k=0;k<FB[i].b;k++) L.appendChild(el('span','b'));
+  for(let k=0;k<FB[i].w;k++) L.appendChild(el('span','w'));
+  if(FB[i].b+FB[i].w===0){const s=el('span','w');s.style.opacity='.25';L.appendChild(s);}
+  return L;
+}
+
+/* deduction */
+function analyze(cands){
+  const possible=Array.from({length:6},function(){return[false,false,false,false];});
+  const present=new Array(6).fill(true), absent=new Array(6).fill(true);
+  let allRep=true, noneRep=true;
+  for(let k=0;k<cands.length;k++){
+    const code=cands[k], has=[0,0,0,0,0,0]; let rep=false;
+    for(let p=0;p<4;p++){const c=DIG[code*4+p]; possible[c][p]=true; if(++has[c]>1) rep=true;}
+    for(let c=0;c<6;c++){ if(has[c]) absent[c]=false; else present[c]=false; }
+    if(rep) noneRep=false; else allRep=false;
+  }
+  const sure=Array.from({length:6},function(){return[false,false,false,false];});
+  for(let p=0;p<4;p++){
+    const live=[]; for(let c=0;c<6;c++) if(possible[c][p]) live.push(c);
+    if(live.length===1) sure[live[0]][p]=true;
+  }
+  return {possible:possible,sure:sure,present:present,absent:absent,allRep:allRep,noneRep:noneRep,n:cands.length};
+}
+function renderPencil(A){
+  const g=document.getElementById('pgrid'); g.innerHTML='';
+  g.appendChild(el('div','phead'));
+  for(let p=0;p<4;p++) g.appendChild(el('div','phead',String(p+1)));
+  for(let c=0;c<6;c++){
+    const nm=el('div','pname'+(A.absent[c]?' dead':''),CNAME[c]);
+    if(!A.absent[c]&&A.present[c]){ nm.style.color=NEONC[c]; nm.style.textShadow='0 0 7px rgba('+GLOW[c]+',.5)'; }
+    g.appendChild(nm);
+    for(let p=0;p<4;p++){
+      const on=A.possible[c][p], sure=A.sure[c][p];
+      const cell=el('div','pcell'+(on?'':' dead')+(sure?' sure':''));
+      const dot=document.createElement('i');
+      dot.style.background=sure?NEONC[c]:PEGC[c];
+      if(sure) dot.style.boxShadow='0 0 8px rgba('+GLOW[c]+',.8), 0 0 2px rgba('+GLOW[c]+',.9)';
+      cell.appendChild(dot); g.appendChild(cell);
+    }
+  }
+}
+function renderFacts(A,cands){
+  const box=document.getElementById('facts'); box.innerHTML='';
+  const lines=[];
+  if(A.n===1){
+    lines.push(['The code is '+digits(cands[0]).map(function(c){return CNAME[c];}).join(', ')+'.',true]);
+  }else{
+    for(let p=0;p<4;p++) for(let c=0;c<6;c++) if(A.sure[c][p]) lines.push(['Slot '+(p+1)+' is '+CNAME[c]+'.',true]);
+    for(let c=0;c<6;c++) if(A.present[c]&&!A.sure[c].some(Boolean))
+      lines.push([CNAME[c]+' is in the code, but not which slot.',true]);
+    const gone=[]; for(let c=0;c<6;c++) if(A.absent[c]) gone.push(CNAME[c]);
+    if(gone.length===1) lines.push(['No remaining code uses '+gone[0]+'.',false]);
+    else if(gone.length>1) lines.push(['Ruled out: '+gone.join(', ')+'.',false]);
+    if(A.allRep) lines.push(['Every remaining code repeats a colour.',false]);
+    if(A.noneRep) lines.push(['No remaining code repeats a colour.',false]);
+  }
+  if(!lines.length) lines.push(['Nothing ruled out yet. Every colour can still go anywhere.',false]);
+  lines.slice(0,4).forEach(function(x){ box.appendChild(el('div','fact'+(x[1]?' key':''),x[0])); });
+}
+
+/* state */
+let secret=0, states=[], cursor=0, draft=[null,null,null,null], selSlot=0;
+let ranking=null, scrubIdx=0, hoverBucket=-1, pinBucket=-1, grouped=false, auto=false, peek=false;
+const currentState=function(){return states[cursor];};
+const activeBucket=function(){return pinBucket>=0?pinBucket:hoverBucket;};
+
+function newGame(){
+  secret=(Math.random()*N)|0;
+  const all=new Int32Array(N); for(let i=0;i<N;i++) all[i]=i;
+  states=[{cands:all,guesses:[]}]; cursor=0; peek=false; auto=false; pinBucket=-1;
+  const ba=document.getElementById('bAuto'); ba.classList.remove('on'); ba.textContent='Solver plays';
+  const bp=document.getElementById('bPeek'); bp.classList.remove('on'); bp.textContent='Show code';
+  draft=[null,null,null,null]; selSlot=0;
+  refresh(true); advise();
+}
+function pegEl(c,cls){
+  const d=document.createElement('div');
+  d.className='peg'+(cls?' '+cls:'');
+  if(c===null||c===undefined) d.classList.add('empty'); else d.style.background=PEGC[c];
+  return d;
+}
+function renderBoard(){
+  const st=currentState(), box=document.getElementById('board'); box.innerHTML='';
+  st.guesses.forEach(function(gu,i){
+    const r=el('div','row'+(gu.fb===SOLVED?' win':''));
+    r.appendChild(el('div','idx',String(i+1)));
+    const ps=el('div','pegs'); digits(gu.g).forEach(function(c){ps.appendChild(pegEl(c));}); r.appendChild(ps);
+    const fb=el('div','fb'); const b=FB[gu.fb].b, w=FB[gu.fb].w;
+    for(let k=0;k<4;k++) fb.appendChild(el('div','fp'+(k<b?' b':(k<b+w?' w':''))));
+    r.appendChild(fb); box.appendChild(r);
+  });
+  const solved=st.guesses.length&&st.guesses[st.guesses.length-1].fb===SOLVED;
+  const live=cursor===states.length-1;
+  if(!solved&&st.guesses.length<9){
+    const r=el('div','row now');
+    r.appendChild(el('div','idx',String(st.guesses.length+1)));
+    const ps=el('div','pegs');
+    draft.forEach(function(c,i){
+      const p=pegEl(live?c:null,'slot'+(live&&i===selSlot?' sel':''));
+      if(live) p.onclick=function(){selSlot=i;renderBoard();};
+      ps.appendChild(p);
+    });
+    r.appendChild(ps); box.appendChild(r);
+  }
+}
+function renderPicker(){
+  const p=document.getElementById('picker'); p.innerHTML='';
+  for(let c=0;c<6;c++){
+    const e=pegEl(c); e.style.cursor='pointer';
+    e.onclick=(function(cc){return function(){
+      draft[selSlot]=cc; const nx=draft.indexOf(null); selSlot=nx<0?3:nx;
+      renderBoard(); syncPlay();
+    };})(c);
+    p.appendChild(e);
+  }
+}
+function syncPlay(){
+  const live=cursor===states.length-1;
+  const done=currentState().guesses.some(function(g){return g.fb===SOLVED;});
+  document.getElementById('bPlay').disabled=!live||done||draft.indexOf(null)>=0;
+  document.getElementById('bTake').disabled=!live||done;
+}
+
+/* histogram */
+function bucketStats(){
+  const st=currentState(), g=ranking[scrubIdx].g, base=g*N;
+  const sizes=new Int32Array(NB);
+  for(let k=0;k<st.cands.length;k++) sizes[TABLE[base+st.cands[k]]]++;
+  let mx=0,nonzero=0;
+  for(let i=0;i<NB;i++){ if(sizes[i]>mx)mx=sizes[i]; if(sizes[i])nonzero++; }
+  return {g:g,base:base,sizes:sizes,mx:mx,nonzero:nonzero};
+}
+function toggleBucket(i){ pinBucket = (pinBucket===i) ? -1 : i; renderBars(); paintField(); }
+function renderBars(){
+  if(!ranking) return;
+  const S=bucketStats(), act=activeBucket();
+  const rows=document.getElementById('rows'); rows.innerHTML='';
+  const bars=document.getElementById('bars'); bars.innerHTML='';
+  const labs=document.getElementById('blabels'); labs.innerHTML='';
+  for(let i=0;i<NB;i++){
+    const s=S.sizes[i];
+    const cls=(s===S.mx&&s>0?' max':'')+(s===0?' zero':'')+(i===act?' act':'')+(i===pinBucket?' pin':'');
+    /* mobile row */
+    const r=el('div','brow'+cls);
+    r.appendChild(fbIcons(i,'rlab'));
+    const tr=el('div','rtrack'); const fl=el('div','rfill');
+    fl.style.width=(s/S.mx*100)+'%'; tr.appendChild(fl); r.appendChild(tr);
+    r.appendChild(el('div','rnum',s?String(s):'0'));
+    r.onclick=(function(ii){return function(){toggleBucket(ii);};})(i);
+    rows.appendChild(r);
+    /* desktop column */
+    const col=el('div','bcol'+cls);
+    col.appendChild(el('div','bnum',s?String(s):''));
+    const b=el('div','bar'); b.style.height=Math.max(2,(s/S.mx)*104)+'px'; col.appendChild(b);
+    col.onclick=(function(ii){return function(){toggleBucket(ii);};})(i);
+    col.onmouseenter=(function(ii){return function(){hoverBucket=ii;renderBars();paintField();};})(i);
+    col.onmouseleave=function(){hoverBucket=-1;renderBars();paintField();};
+    bars.appendChild(col);
+    labs.appendChild(fbIcons(i,'blab'));
+  }
+  const cp=document.getElementById('candPegs'); cp.innerHTML='';
+  digits(S.g).forEach(function(c){cp.appendChild(pegEl(c));});
+  document.getElementById('candRank').textContent = scrubIdx===0?'best available':'#'+(scrubIdx+1)+' of 1296';
+  document.getElementById('candWorst').textContent=S.mx;
+  document.getElementById('hcap').innerHTML =
+    'Sorts the '+currentState().cands.length+' surviving codes into '+S.nonzero+' groups. Biggest holds <b>'+S.mx+'</b>.';
+  const pn=document.getElementById('pinnote');
+  if(pinBucket>=0){
+    const s=S.sizes[pinBucket];
+    pn.className='pinnote show';
+    pn.innerHTML='If the answer comes back as '+fbIcons(pinBucket,'il').outerHTML+', <b>'+s+'</b> '+
+      (s===1?'code survives':'codes survive')+'.';
+  } else pn.className='pinnote';
+}
+
+/* field */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const chipBox=document.getElementById('chips');
+let dots=new Map(), animTo=0;
+const REDUCE=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const chipMode=function(){return currentState().cands.length<=CHIP_LIMIT;};
+
+function bucketColor(i,isMax,size){
+  const act=activeBucket();
+  if(size===0) return '#232B40';
+  if(act>=0) return i===act?'#FFFFFF':'#39435F';
+  if(isMax) return '#FF6B4A';
+  return 'hsl('+(212+i*5)+' 24% '+(34+(i%3)*5)+'%)';
+}
+function fitCanvas(){
+  const w=cv.clientWidth||600, h=Math.round(w*(narrow?0.82:0.42));
+  const dpr=Math.min(devicePixelRatio||1,2);
+  cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {w:w,h:h};
+}
+function layout(list,W,H){
+  const n=list.length||1;
+  const cols=Math.max(1,Math.min(n,Math.round(Math.sqrt(n*W/H))));
+  const cell=Math.min(W/cols,H/Math.ceil(n/cols));
+  const rows=Math.ceil(n/cols), ox=(W-cols*cell)/2, oy=(H-rows*cell)/2;
+  const pos=new Map();
+  list.forEach(function(code,i){
+    pos.set(code,{x:ox+(i%cols)*cell+cell/2,y:oy+((i/cols)|0)*cell+cell/2,r:Math.max(1.1,cell*0.34)});
+  });
+  return pos;
+}
+function orderedList(){
+  const arr=Array.from(currentState().cands);
+  if(grouped&&ranking){ const base=ranking[scrubIdx].g*N; arr.sort(function(a,b){return TABLE[base+a]-TABLE[base+b]||a-b;}); }
+  return arr;
+}
+function reflow(instant){
+  if(chipMode()){ cv.style.display='none'; chipBox.style.display='flex'; renderChips(); return; }
+  cv.style.display='block'; chipBox.style.display='none';
+  const F=fitCanvas();
+  const list=orderedList(), pos=layout(list,F.w-10,F.h-10), alive=new Set(list);
+  dots.forEach(function(d,code){ if(!alive.has(code)){d.ta=0;d.tr=d.r*0.4;} });
+  list.forEach(function(code){
+    const p=pos.get(code); let d=dots.get(code);
+    if(!d){ d={x:p.x+5,y:p.y+5,r:p.r,a:0,tx:0,ty:0,tr:0,ta:1}; dots.set(code,d); }
+    d.tx=p.x+5; d.ty=p.y+5; d.tr=p.r; d.ta=1;
+  });
+  if(instant||REDUCE) dots.forEach(function(d){d.x=d.tx;d.y=d.ty;d.r=d.tr;d.a=d.ta;});
+  animTo=performance.now()+760; requestAnimationFrame(tick);
+}
+function tick(now){
+  if(chipMode()) return;
+  let moving=false;
+  dots.forEach(function(d){
+    const k=REDUCE?1:0.16;
+    d.x+=(d.tx-d.x)*k; d.y+=(d.ty-d.y)*k; d.r+=(d.tr-d.r)*k; d.a+=(d.ta-d.a)*k;
+    if(Math.abs(d.tx-d.x)>.4||Math.abs(d.ty-d.y)>.4||Math.abs(d.tr-d.r)>.4||Math.abs(d.ta-d.a)>.01) moving=true;
+  });
+  paintField();
+  if(moving&&now<animTo+400) requestAnimationFrame(tick);
+  else { dots.forEach(function(d,c){ if(d.ta===0&&d.a<.02) dots.delete(c); }); paintField(); }
+}
+function renderChips(){
+  const st=currentState(); chipBox.innerHTML='';
+  const S=ranking?bucketStats():null;
+  Array.from(st.cands).forEach(function(code,i){
+    const ch=el('div','chip');
+    ch.style.animationDelay=Math.min(i*14,700)+'ms';
+    if(S){ const b=TABLE[S.base+code]; ch.style.borderColor=bucketColor(b,S.sizes[b]===S.mx,S.sizes[b]); }
+    digits(code).forEach(function(c){const s=document.createElement('span');s.style.background=PEGC[c];ch.appendChild(s);});
+    chipBox.appendChild(ch);
+  });
+}
+function renderChipBorders(){
+  if(!ranking) return;
+  const S=bucketStats(), list=Array.from(currentState().cands);
+  const nodes=chipBox.querySelectorAll('.chip');
+  for(let i=0;i<nodes.length;i++){
+    const b=TABLE[S.base+list[i]];
+    nodes[i].style.borderColor=bucketColor(b,S.sizes[b]===S.mx,S.sizes[b]);
+  }
+}
+function paintField(){
+  if(chipMode()){ renderChipBorders(); return; }
+  const w=cv.clientWidth, h=parseFloat(cv.style.height);
+  ctx.clearRect(0,0,w,h);
+  const S=ranking?bucketStats():null;
+  dots.forEach(function(d,code){
+    if(d.a<=.01) return;
+    ctx.globalAlpha=Math.max(0,Math.min(1,d.a));
+    if(S){ const b=TABLE[S.base+code]; ctx.fillStyle=bucketColor(b,S.sizes[b]===S.mx,S.sizes[b]); }
+    else ctx.fillStyle='#4E5C86';
+    ctx.beginPath(); ctx.arc(d.x,d.y,Math.max(.6,d.r),0,6.2832); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+addEventListener('resize',function(){ if(states.length&&!chipMode()) reflow(true); });
+MQ.addEventListener('change',function(e){
+  narrow=e.matches;
+  if(!states.length) return;
+  renderBars(); if(!chipMode()) reflow(true);
+});
+
+/* coach */
+const pegSpan=function(g){return '<span class="inline">'+digits(g).map(function(c){return '<span style="background:'+PEGC[c]+'"></span>';}).join('')+'</span>';};
+function setCoach(html,tone){
+  const c=document.getElementById('coach');
+  c.className='coach a-coach'+(tone?' '+tone:''); c.innerHTML=html;
+}
+function advise(){
+  const st=currentState();
+  if(st.guesses.some(function(g){return g.fb===SOLVED;})){
+    setCoach('<p>Cracked in <span class="num">'+st.guesses.length+'</span>. The code was '+pegSpan(secret)+'.</p>'+
+      '<p>Knuth\u2019s rule never needs more than five, and no rule can promise four.</p>','good');
+    return;
+  }
+  if(st.cands.length===1){ setCoach('<p>One code left: '+pegSpan(st.cands[0])+'. Play it.</p>','good'); return; }
+  const best=ranking[0];
+  const note=best.inSet?'It could still be the answer outright.':'It cannot be the answer. It just splits the field better than anything that can.';
+  setCoach('<p>Play '+pegSpan(best.g)+' \u2014 whatever comes back, at most <span class="num">'+best.worst+'</span> of the '+st.cands.length+' codes survive.</p>'+
+    '<p>'+note+'</p>');
+}
+function grade(played,worstAt,prevRank){
+  const best=prevRank[0], st=currentState(), ok=worstAt===best.worst;
+  const head = ok
+    ? '<p>'+pegSpan(played)+' was optimal. Worst case <span class="num">'+worstAt+'</span>, and nothing beat it.</p>'
+    : '<p>'+pegSpan(played)+' risked leaving <span class="num">'+worstAt+'</span> codes. '+pegSpan(best.g)+' would have capped it at <span class="num">'+best.worst+'</span>.</p>';
+  const next = st.cands.length===1
+    ? '<p><span class="num">1</span> code left: '+pegSpan(st.cands[0])+'. Play it.</p>'
+    : '<p><span class="num">'+st.cands.length+'</span> codes still fit. Play '+pegSpan(ranking[0].g)+' next \u2014 worst case <span class="num">'+ranking[0].worst+'</span>.</p>';
+  setCoach(head+next, ok?'good':'bad');
+}
+
+/* play */
+function playGuess(g){
+  const st=currentState(), prevRank=ranking;
+  const f=TABLE[g*N+secret];
+  const bk=bucketsFor(g,st.cands);
+  let worstAt=0; for(let i=0;i<NB;i++) if(bk[i].length>worstAt) worstAt=bk[i].length;
+  states=states.slice(0,cursor+1);
+  states.push({cands:Int32Array.from(bk[f]),guesses:st.guesses.concat([{g:g,fb:f}])});
+  cursor=states.length-1; draft=[null,null,null,null]; selSlot=0;
+  refresh(false);
+  if(f===SOLVED) advise(); else if(prevRank) grade(g,worstAt,prevRank);
+}
+function refresh(instant){
+  const st=currentState();
+  ranking = st.cands.length>1 ? rankAll(st.cands) : [{g:st.cands[0]||0,worst:1,inSet:1}];
+  scrubIdx=0; hoverBucket=-1; pinBucket=-1;
+  const sl=document.getElementById('slider');
+  sl.max=Math.max(0,ranking.length-1); sl.value=0; sl.disabled=ranking.length<2;
+  document.getElementById('tTurn').textContent=Math.min(st.guesses.length+1,9);
+  document.getElementById('tLeft').textContent=st.cands.length;
+  document.getElementById('fieldTtl').textContent =
+    chipMode() ? 'The '+st.cands.length+' codes still alive' : 'Every code still alive';
+  const A=analyze(st.cands);
+  renderPencil(A); renderFacts(A,st.cands);
+  renderBoard(); renderBars(); reflow(instant); syncPlay();
+  document.getElementById('bBack').disabled=cursor===0;
+  document.getElementById('bFwd').disabled=cursor>=states.length-1;
+}
+
+/* wiring */
+function setScrub(v){
+  scrubIdx=v; hoverBucket=-1; pinBucket=-1;
+  document.getElementById('slider').value=v;
+  renderBars();
+  if(chipMode()) renderChipBorders();
+  else if(grouped) reflow(false); else paintField();
+}
+document.getElementById('slider').oninput=function(e){ setScrub(+e.target.value); };
+document.getElementById('jBest').onclick=function(){ setScrub(0); };
+document.getElementById('jMid').onclick=function(){ setScrub(Math.floor((ranking.length-1)/2)); };
+document.getElementById('jWorst').onclick=function(){ setScrub(ranking.length-1); };
+document.getElementById('bPlay').onclick=function(){ playGuess(draft[0]*216+draft[1]*36+draft[2]*6+draft[3]); };
+document.getElementById('bClear').onclick=function(){draft=[null,null,null,null];selSlot=0;renderBoard();syncPlay();};
+document.getElementById('bTake').onclick=function(){draft=digits(ranking[0].g);selSlot=0;renderBoard();syncPlay();};
+document.getElementById('bSort').onclick=function(e){
+  grouped=!grouped; e.target.classList.toggle('on',grouped);
+  e.target.textContent=grouped?'Ungroup':'Group by outcome';
+  reflow(false);
+};
+document.getElementById('bPeek').onclick=function(e){
+  peek=!peek; e.target.classList.toggle('on',peek);
+  e.target.textContent=peek?'Hide code':'Show code';
+  if(peek) setCoach('<p>The code is '+pegSpan(secret)+'.</p><p>Only you can see this. Hide it before you record.</p>');
+  else advise();
+};
+document.getElementById('bNew').onclick=newGame;
+document.getElementById('bBack').onclick=function(){ if(cursor>0){cursor--;refresh(false);advise();} };
+document.getElementById('bFwd').onclick=function(){ if(cursor<states.length-1){cursor++;refresh(false);advise();} };
+
+let autoTimer=null;
+document.getElementById('bAuto').onclick=function(e){
+  auto=!auto; e.target.classList.toggle('on',auto);
+  e.target.textContent=auto?'Stop solver':'Solver plays';
+  if(auto) step(); else clearTimeout(autoTimer);
+};
+function step(){
+  const st=currentState();
+  if(!auto||st.guesses.some(function(g){return g.fb===SOLVED;})){
+    auto=false; const b=document.getElementById('bAuto');
+    b.classList.remove('on'); b.textContent='Solver plays'; return;
+  }
+  playGuess(ranking[0].g);
+  autoTimer=setTimeout(step,1600);
+}
+renderPicker();
+</script>
