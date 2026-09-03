@@ -21,6 +21,20 @@ panels, shown and hidden by `data-mode` on `<body>`. One solver, one board, no c
 
 Each tab keeps its own game. Switching tabs parks a board, it never wipes one.
 
+## Answer pegs redrawn (2026-09-03)
+The black/white key pegs are now drawn literally — a pale tray, four holes, a black peg
+and a white peg — everywhere they appear: board rows, both histograms, the coach's inline
+icons, and the analyse entry grid. The old dark-mode inversion (solid light dot = black
+peg, hollow ring = white peg) was unreadable at 8px and contradicted the `1b 3w` labels.
+A key sits under the board in all three modes.
+
+Two things this shook out, both fixed:
+- The analyse grid dimmed impossible answers to 26% opacity, which made every icon on the
+  page look wrong. Now the button chrome dims and the pegs stay at 50%, still readable.
+- `.blabels` (the desktop bar labels) had no mobile styling, so its children used to be
+  invisible by accident. Tray styles are global, so on mobile it briefly rendered as a
+  stack of stretched pale bars. It now has an explicit `display:none`.
+
 ## Verified (not assumed)
 - `node verify-all-games.js` runs the **shipped** `<script>` under a DOM shim and plays
   all 1,296 games: total 5801, average 4.4761, worst 5, distribution 1/6/62/533/694.

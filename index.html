@@ -59,10 +59,34 @@ h1 em{font-style:normal;color:var(--ink-faint)}
 .peg.empty{background:#0A0D16;box-shadow:inset 0 2px 4px rgba(0,0,0,.7);border:1px solid #262E45}
 .peg.slot{cursor:pointer}
 .peg.slot.sel{border:2px solid var(--hot)}
-.fb{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-left:auto}
-.fp{width:9px;height:9px;border-radius:50%;background:#0A0D16;box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
-.fp.b{background:#F5F7FF}
-.fp.w{background:transparent;box-shadow:inset 0 0 0 1.5px #7F8AAB}
+.fb{margin-left:auto;--td:9px;--th:5px}
+
+/* answer pegs, drawn like the real board: a pale tray, four holes,
+   a black peg for the right slot and a white peg for the right colour in the wrong slot.
+   Sized per context with --td (peg), --th (empty hole), --tg (gap), --tp (pad), --tr (radius). */
+.tray{display:grid;grid-template-columns:1fr 1fr;gap:var(--tg,3px);padding:var(--tp,3px);
+  border-radius:var(--tr,4px);flex:none;justify-items:center;align-items:center;
+  background:linear-gradient(180deg,#AEB6C9,#939BB2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 1px 2px rgba(0,0,0,.45)}
+.tray span{width:var(--td,9px);height:var(--td,9px);border-radius:50%}
+.tray span.b{background:#14171F;
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.22),inset 0 -1px 1px rgba(0,0,0,.55)}
+.tray span.w{background:#FBFCFF;
+  box-shadow:inset 0 -1px 1px rgba(0,0,0,.3),inset 0 1.5px 1px rgba(255,255,255,.9)}
+.tray span:not(.b):not(.w){width:var(--th,5px);height:var(--th,5px);background:#626A80;
+  box-shadow:inset 0 1px 1px rgba(0,0,0,.55)}
+.tray.il{display:inline-grid;vertical-align:-6px;margin:0 4px;
+  --td:7.5px;--th:4px;--tg:2px;--tp:2.5px;--tr:4px}
+
+/* key, so the two pegs never have to be guessed at */
+.pegkey{display:flex;flex-wrap:wrap;gap:5px 15px;margin-top:11px;font-size:11px;color:var(--ink-faint)}
+.pegkey span{display:flex;align-items:center;gap:6px}
+.pegkey i{width:15px;height:15px;border-radius:4px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(180deg,#AEB6C9,#939BB2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 1px 2px rgba(0,0,0,.45)}
+.pegkey i::after{content:"";width:8px;height:8px;border-radius:50%}
+.pegkey i.b::after{background:#14171F;box-shadow:inset 0 1.5px 1px rgba(255,255,255,.22)}
+.pegkey i.w::after{background:#FBFCFF;box-shadow:inset 0 -1px 1px rgba(0,0,0,.3)}
 .row.win{background:rgba(79,191,127,.12);box-shadow:inset 0 0 0 1px rgba(79,191,127,.45)}
 
 .btn{background:var(--panel-hi);border:1px solid var(--rule);border-radius:8px;padding:11px 13px;
@@ -125,10 +149,8 @@ canvas{display:block;width:100%;height:auto;border-radius:9px;background:var(--b
 .rows{display:flex;flex-direction:column;gap:4px}
 .brow{display:flex;align-items:center;gap:9px;padding:3px 5px;border-radius:6px;cursor:pointer}
 .brow.pin{background:var(--panel-hi);box-shadow:inset 0 0 0 1px var(--rule)}
-.rlab{display:flex;gap:2px;width:42px;flex:none;justify-content:flex-start}
-.rlab span{width:7px;height:7px;border-radius:50%}
-.rlab .b{background:#F5F7FF}
-.rlab .w{box-shadow:inset 0 0 0 1.2px #7F8AAB}
+.rlab{display:flex;width:26px;flex:none;justify-content:flex-start}
+.rlab .tray{--td:6px;--th:3.5px;--tg:2px;--tp:2.5px;--tr:3.5px}
 .rtrack{flex:1;height:15px;background:#1A2033;border-radius:4px;overflow:hidden}
 .rfill{height:100%;background:#3C4767;border-radius:4px;transition:width .3s,background .15s}
 .brow.max .rfill{background:var(--hot)}
@@ -137,13 +159,11 @@ canvas{display:block;width:100%;height:auto;border-radius:9px;background:var(--b
 .rnum{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);width:34px;text-align:right;flex:none}
 .brow.max .rnum{color:var(--hot);font-weight:700}
 .bars{display:none}
-.pinnote{font-size:12.5px;color:var(--ink);margin-top:11px;padding:9px 11px;background:var(--panel-hi);
+.blabels{display:none}  /* desktop-only; the tray styles are global, so it must be hidden explicitly */
+.pinnote{font-size:12.5px;line-height:1.8;color:var(--ink);margin-top:11px;padding:9px 11px;background:var(--panel-hi);
   border-radius:8px;border-left:2px solid var(--hot);display:none}
 .pinnote.show{display:block}
-.pinnote .il{display:inline-flex;gap:2px;vertical-align:-2px;margin:0 3px}
-.pinnote .il span{width:9px;height:9px;border-radius:50%}
-.pinnote .il .b{background:#F5F7FF}
-.pinnote .il .w{box-shadow:inset 0 0 0 1.2px #7F8AAB}
+.pinnote .il{vertical-align:-5px}
 
 .scrub{margin-top:16px}
 .scrubhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
@@ -161,14 +181,11 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .jump .btn{flex:1}
 
 .coach{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--hot);border-radius:10px;padding:14px 15px}
-.coach p{margin:0;font-size:14px}
+.coach p{margin:0;font-size:14px;line-height:1.7}
 .coach p+p{margin-top:8px;color:var(--ink-dim);font-size:13px}
 .coach .inline{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
 .coach .inline span{width:16px;height:16px;border-radius:50%}
-.coach .il{display:inline-flex;gap:2px;vertical-align:-1px;margin:0 3px}
-.coach .il span{width:9px;height:9px;border-radius:50%}
-.coach .il .b{background:#F5F7FF}
-.coach .il .w{box-shadow:inset 0 0 0 1.2px #7F8AAB}
+.coach .il{vertical-align:-5px}
 .coach.good{border-left-color:#4FBF7F}
 .coach.bad{border-left-color:#F2A03D}
 .num{font-family:var(--mono);font-weight:700}
@@ -206,7 +223,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   .peg{width:22px;height:22px}
   .pegs{gap:5px}
   .row{gap:9px;padding:5px 7px}
-  .fp{width:8px;height:8px}
+  .fb{--td:8px;--th:4.5px;--tg:2.5px;--tp:2.5px}
   .btn{padding:8px 12px;font-size:12.5px;min-height:0}
   .btn.sm{padding:6px 9px;font-size:11px;min-height:0}
   .btnrow{gap:6px;margin-top:6px}
@@ -235,10 +252,8 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   .bnum{font-family:var(--mono);font-size:9.5px;text-align:center;color:var(--ink-faint);margin-bottom:3px;height:12px}
   .bcol.max .bnum{color:var(--hot);font-weight:700}
   .blabels{display:flex;gap:3px;margin-top:6px}
-  .blab{flex:1;display:flex;justify-content:center;gap:1.5px;min-width:0}
-  .blab span{width:5px;height:5px;border-radius:50%}
-  .blab .b{background:#F5F7FF}
-  .blab .w{box-shadow:inset 0 0 0 1px #7F8AAB}
+  .blab{flex:1;display:flex;justify-content:center;min-width:0}
+  .blab .tray{--td:4.5px;--th:2.5px;--tg:1.5px;--tp:1.5px;--tr:3px}
 
   .candidate .peg{width:19px;height:19px}
   input[type=range]{height:20px}
@@ -246,7 +261,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   input[type=range]::-moz-range-thumb{width:15px;height:15px;border-width:2px}
   .controls .btn{flex:none}
   .spacer{display:block;flex:1}
-  .coach p{font-size:13.5px}
+  .coach p{font-size:13.5px;line-height:1.7}
 }
 @media(min-width:881px) and (hover:hover){
   .bcol:hover .bar{background:#5A6892}
@@ -279,13 +294,12 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .fbo{display:flex;align-items:center;gap:9px;background:var(--panel-hi);border:1px solid var(--rule);
   border-radius:8px;padding:8px 10px;min-height:44px;font-family:inherit;font-size:12px;color:inherit;
   transition:background .12s,border-color .12s}
-.fbo:disabled{opacity:.26;cursor:default}
-.fq{display:grid;grid-template-columns:1fr 1fr;gap:3px;flex:none}
-.fq span{width:8px;height:8px;border-radius:50%;background:#0A0D16;box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
-.fq span.b{background:#F5F7FF;box-shadow:none}
-.fq span.w{background:transparent;box-shadow:inset 0 0 0 1.4px #7F8AAB}
-.fbo .ftxt{font-family:var(--mono);font-size:11.5px}
-.fbo .cnt{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-left:auto}
+/* an impossible answer is dimmed, but its pegs stay readable — that is the whole point of showing it */
+.fbo:disabled{cursor:default;background:transparent;border-color:#242C42;color:var(--ink-faint)}
+.fbo:disabled .tray{opacity:.5}
+.fbo .tray{--td:11px;--th:6px;--tg:3px;--tp:3px;--tr:5px}
+.fbo .ftxt{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.fbo .cnt{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-left:auto;white-space:nowrap}
 @media(hover:hover){.fbo:hover:not(:disabled){background:#323C5C;border-color:#46527A}}
 
 /* Play — the board, and nothing that would help you */
@@ -302,7 +316,7 @@ body[data-mode=play] .board .peg{width:38px;height:38px}
 body[data-mode=play] .board .pegs{gap:10px}
 body[data-mode=play] .board .row{gap:13px;padding:9px 10px}
 body[data-mode=play] .board .idx{font-size:13px;width:17px}
-body[data-mode=play] .board .fp{width:11px;height:11px}
+body[data-mode=play] .board .fb{--td:11px;--th:6px;--tg:3px;--tp:3px;--tr:5px}
 
 /* Analyse — no secret to reveal, and answers are typed rather than computed */
 body[data-mode=analyse] #row3,
@@ -313,7 +327,10 @@ body:not([data-mode=play]) .result{display:none}
 @media(min-width:881px){
   .tabs{max-width:600px;margin-bottom:20px}
   .tab{font-size:12.5px;padding:8px 6px;min-height:0}
-  .fbo{min-height:0;padding:7px 9px}
+  .fbo{min-height:0;padding:6px 8px;gap:7px}
+  .fbo .tray{--td:8.5px;--th:4.5px;--tg:2.5px;--tp:2.5px;--tr:4px}
+  .fbo .ftxt{font-size:11px}
+  .fbo .cnt{font-size:10px}
   .a-entry{grid-area:entry}
   body[data-mode=play] .grid{grid-template-columns:minmax(0,540px);
     grid-template-areas:"board" "ctrl";justify-content:center}
@@ -359,6 +376,10 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
     <div class="panel a-board">
       <div class="ttl">The board</div>
       <div class="board" id="board"></div>
+      <div class="pegkey">
+        <span><i class="b"></i>in the right slot</span>
+        <span><i class="w"></i>right colour, wrong slot</span>
+      </div>
       <div class="result" id="result"></div>
       <div class="gbar">
         <div class="picker" id="picker"></div>
@@ -502,11 +523,10 @@ function bucketsFor(g,cands){
   return bk;
 }
 function el(t,cls,txt){const e=document.createElement(t);if(cls)e.className=cls;if(txt!==undefined&&txt!=='')e.textContent=txt;return e;}
+/* every answer is four holes: black pegs, then white pegs, then empties */
 function fbIcons(i,cls){
-  const L=el('div',cls);
-  for(let k=0;k<FB[i].b;k++) L.appendChild(el('span','b'));
-  for(let k=0;k<FB[i].w;k++) L.appendChild(el('span','w'));
-  if(FB[i].b+FB[i].w===0){const s=el('span','w');s.style.opacity='.25';L.appendChild(s);}
+  const L=el('div','tray'+(cls?' '+cls:'')), b=FB[i].b, w=FB[i].w;
+  for(let k=0;k<4;k++) L.appendChild(el('span',k<b?'b':(k<b+w?'w':'')));
   return L;
 }
 
@@ -631,9 +651,7 @@ function renderBoard(){
     const r=el('div','row'+(gu.fb===SOLVED?' win':''));
     r.appendChild(el('div','idx',String(i+1)));
     const ps=el('div','pegs'); digits(gu.g).forEach(function(c){ps.appendChild(pegEl(c));}); r.appendChild(ps);
-    const fb=el('div','fb'); const b=FB[gu.fb].b, w=FB[gu.fb].w;
-    for(let k=0;k<4;k++) fb.appendChild(el('div','fp'+(k<b?' b':(k<b+w?' w':''))));
-    r.appendChild(fb); box.appendChild(r);
+    r.appendChild(fbIcons(gu.fb,'fb')); box.appendChild(r);
   });
   const solved=st.guesses.length&&st.guesses[st.guesses.length-1].fb===SOLVED;
   const live=cursor===states.length-1;
@@ -675,11 +693,6 @@ function syncSortBtn(){
 function draftChanged(){ renderBoard(); syncPlay(); if(mode==='analyse') renderEntry(); }
 
 /* analyse — you type the answer, so only answers some surviving code could give are offered */
-function fbQuad(i){
-  const d=el('div','fq');
-  for(let k=0;k<4;k++) d.appendChild(el('span',k<FB[i].b?'b':(k<FB[i].b+FB[i].w?'w':'')));
-  return d;
-}
 function renderEntry(){
   const st=currentState(), box=document.getElementById('fbgrid'); box.innerHTML='';
   const solved=st.guesses.some(function(g){return g.fb===SOLVED;});
@@ -698,7 +711,7 @@ function renderEntry(){
     const n=ready?bk[i].length:0;
     const b=document.createElement('button');
     b.className='fbo'; b.disabled=!ready||n===0;
-    b.appendChild(fbQuad(i));
+    b.appendChild(fbIcons(i));
     b.appendChild(el('span','ftxt',FB[i].b+'b '+FB[i].w+'w'));
     b.appendChild(el('span','cnt',ready?(n+' left'):'–'));
     b.onclick=(function(ii){return function(){playGuess(g,ii);};})(i);
@@ -738,7 +751,7 @@ function renderBars(){
     const cls=(s===S.mx&&s>0?' max':'')+(s===0?' zero':'')+(i===act?' act':'')+(i===pinBucket?' pin':'');
     /* mobile row */
     const r=el('div','brow'+cls);
-    r.appendChild(fbIcons(i,'rlab'));
+    const rl=el('div','rlab'); rl.appendChild(fbIcons(i)); r.appendChild(rl);
     const tr=el('div','rtrack'); const fl=el('div','rfill');
     fl.style.width=(s/S.mx*100)+'%'; tr.appendChild(fl); r.appendChild(tr);
     r.appendChild(el('div','rnum',s?String(s):'0'));
@@ -752,7 +765,7 @@ function renderBars(){
     col.onmouseenter=(function(ii){return function(){hoverBucket=ii;renderBars();paintField();};})(i);
     col.onmouseleave=function(){hoverBucket=-1;renderBars();paintField();};
     bars.appendChild(col);
-    labs.appendChild(fbIcons(i,'blab'));
+    const bl=el('div','blab'); bl.appendChild(fbIcons(i)); labs.appendChild(bl);
   }
   const cp=document.getElementById('candPegs'); cp.innerHTML='';
   digits(S.g).forEach(function(c){cp.appendChild(pegEl(c));});

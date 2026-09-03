@@ -86,6 +86,27 @@ zero new colours, no exceptions.
 Consecutive guesses differ by: 0 colours 7.8%, 1 colour 22.3%, 2 colours 35.8%,
 3 colours 26.1%, 4 colours 8.0%.
 
+## The answer pegs (changed 2026-09-03)
+
+They are drawn **literally**, like the physical board: a pale tray, four holes, a black
+peg for the right colour in the right slot and a white peg for the right colour in the
+wrong slot. Empty holes are small and recessed.
+
+This replaced an earlier dark-mode inversion (solid near-white = black peg, hollow ring
+= white peg), which nobody could read: at 8px a ring and a solid dot look the same, and
+the letters in `1b 3w` contradicted the colours on screen.
+
+- **One function builds every one of them**: `fbIcons(i, cls)` returns a `.tray`. Used by
+  the board rows, both histograms, the coach's inline icons, the pinned-bucket note and
+  the analyse entry grid. Do not add a second way to draw them.
+- Size per context with the custom properties `--td` (peg), `--th` (empty hole),
+  `--tg` (gap), `--tp` (padding), `--tr` (corner). Never hard-code sizes on `.tray span`.
+- A key sits under the board in **all three modes** (`.pegkey`). It is the only place the
+  convention is explained, so it stays visible even in play mode.
+- **The tray styles are global, not inside a media query.** Anything that holds a tray and
+  is desktop-only must be hidden explicitly on mobile — `.blabels` needs its own
+  `display:none`, because its children used to be invisible by accident.
+
 ## Rules for the explanations
 
 **Every clause must be derived from the live candidate set.** No invented reasoning, no
