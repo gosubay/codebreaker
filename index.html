@@ -8,6 +8,9 @@
 <meta property="og:description" content="Mastermind, 1,296 possible codes, and the 1977 algorithm that cracks any of them in five guesses.">
 <meta property="og:image" content="og.png">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -162,6 +165,10 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .coach p+p{margin-top:8px;color:var(--ink-dim);font-size:13px}
 .coach .inline{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
 .coach .inline span{width:16px;height:16px;border-radius:50%}
+.coach .il{display:inline-flex;gap:2px;vertical-align:-1px;margin:0 3px}
+.coach .il span{width:9px;height:9px;border-radius:50%}
+.coach .il .b{background:#F5F7FF}
+.coach .il .w{box-shadow:inset 0 0 0 1.2px #7F8AAB}
 .coach.good{border-left-color:#4FBF7F}
 .coach.bad{border-left-color:#F2A03D}
 .num{font-family:var(--mono);font-weight:700}
@@ -477,6 +484,7 @@ function renderFacts(A,cands){
 
 /* state */
 let secret=0, states=[], cursor=0, draft=[null,null,null,null], selSlot=0;
+let ANALYSIS=null;
 let ranking=null, scrubIdx=0, hoverBucket=-1, pinBucket=-1, grouped=false, auto=false, peek=false;
 const currentState=function(){return states[cursor];};
 const activeBucket=function(){return pinBucket>=0?pinBucket:hoverBucket;};
@@ -700,6 +708,118 @@ function setCoach(html,tone){
   const c=document.getElementById('coach');
   c.className='coach a-coach'+(tone?' '+tone:''); c.innerHTML=html;
 }
+/* opening shapes — worst case depends only on the pattern of repeats, never the colours */
+function shapeOf(g){
+  const c={}; for(let p=0;p<4;p++){const x=DIG[g*4+p]; c[x]=(c[x]||0)+1;}
+  return Object.keys(c).map(function(k){return c[k];}).sort(function(a,b){return b-a;}).join('');
+}
+const OPENSHAPE={
+  '22':  {n:90,  name:'two colours, two of each'},
+  '211': {n:720, name:'a pair and two singles'},
+  '1111':{n:360, name:'four different colours'},
+  '31':  {n:120, name:'three of one colour and one other'},
+  '4':   {n:6,   name:'all four the same colour'}
+};
+
+function nameListOr(arr){
+  const n=arr.map(function(c){return CNAME[c].toLowerCase();});
+  if(n.length===1) return n[0];
+  if(n.length===2) return n[0]+' or '+n[1];
+  return n.slice(0,-1).join(', ')+' or '+n[n.length-1];
+}
+function nameList(arr){
+  const n=arr.map(function(c){return CNAME[c].toLowerCase();});
+  if(n.length===1) return n[0];
+  if(n.length===2) return n[0]+' and '+n[1];
+  return n.slice(0,-1).join(', ')+' and '+n[n.length-1];
+}
+function bestOf(cands){
+  const counts=new Int32Array(NB), inSet=new Uint8Array(N);
+  for(let k=0;k<cands.length;k++) inSet[cands[k]]=1;
+  let bg=-1,bw=1e9,bi=-1;
+  for(let g=0;g<N;g++){
+    counts.fill(0); const base=g*N; let w=0;
+    for(let k=0;k<cands.length;k++){const v=++counts[TABLE[base+cands[k]]]; if(v>w)w=v;}
+    const is=inSet[g];
+    if(w<bw||(w===bw&&is>bi)){bw=w;bg=g;bi=is;}
+  }
+  return {g:bg,worst:bw};
+}
+function shortPlan(cands,gg){
+  if(cands.length===1) return 'hand you the answer outright';
+  const A=analyze(cands), B=(gg===undefined?bestOf(cands):{g:gg});
+  const gc=[], seen={};
+  for(let p=0;p<4;p++){const x=DIG[B.g*4+p]; if(!seen[x]){seen[x]=1;gc.push(x);}}
+  const open=[],conf=[];
+  for(let c=0;c<6;c++){ if(!A.absent[c]){ A.present[c]?conf.push(c):open.push(c); } }
+  const inArr=function(a){return function(x){return a.indexOf(x)>=0;};};
+  const fresh=gc.filter(inArr(open)), held=gc.filter(inArr(conf));
+  if(!open.length)  return 'just rearrange what you already know';
+  if(!fresh.length) return 'move the known colours into slots you have not tried';
+  if(held.length)   return 'keep '+nameList(held)+' and probe '+nameList(fresh);
+  return 'probe '+nameList(fresh);
+}
+function plan(g){
+  const st=currentState();
+  if(st.cands.length<6) return '';
+  const bk=bucketsFor(g,st.cands);
+  let wi=-1,si=-1;
+  for(let i=0;i<NB;i++){
+    if(i===SOLVED||!bk[i].length) continue;
+    if(wi<0||bk[i].length>bk[wi].length) wi=i;
+    if(si<0||bk[i].length<bk[si].length) si=i;
+  }
+  if(wi<0) return '';
+  let t='Looking ahead: '+fbIcons(wi,'il').outerHTML+' is the answer to fear \u2014 <span class="num">'+
+    bk[wi].length+'</span> left, and move '+(st.guesses.length+2)+' would '+shortPlan(bk[wi])+'.';
+  if(si>=0&&si!==wi)
+    t+=' '+fbIcons(si,'il').outerHTML+' would cut you to <span class="num">'+bk[si].length+'</span>.';
+  return t;
+}
+
+function lastAnswer(){
+  const st=currentState();
+  if(!st.guesses.length) return '';
+  const gu=st.guesses[st.guesses.length-1];
+  const b=FB[gu.fb].b, w=FB[gu.fb].w, t=b+w;
+  const cols=[], seen={};
+  for(let p=0;p<4;p++){const x=DIG[gu.g*4+p]; if(!seen[x]){seen[x]=1;cols.push(x);}}
+  const nm=nameListOr(cols);
+  const num=function(x){return '<span class="num">'+x+'</span>';};
+  function placed(){
+    if(b===0) return 'None of them is in the right slot yet.';
+    if(w===0) return b===1 ? 'It is already in the right slot.'
+            : b===2 ? 'Both are already in the right slot.'
+            : 'All '+num(b)+' are already in the right slot.';
+    return num(b)+' in the right slot, '+num(w)+' in the wrong one.';
+  }
+  if(t===0){
+    const none = cols.length===2
+      ? 'Neither '+CNAME[cols[0]].toLowerCase()+' nor '+CNAME[cols[1]].toLowerCase()
+      : 'None of '+nm;
+    return 'No pegs. '+none+' is in the code, so every slot is a colour you have not tested.';
+  }
+  if(t===4){
+    return num(4)+' pegs. Every slot is '+nm+', so the colour question is closed and only the arrangement is left. '+placed();
+  }
+  return num(t)+' peg'+(t>1?'s':'')+'. At least '+num(t)+' of the four slots '+(t===1?'holds':'hold')+
+    ' '+nm+', so at most '+num(4-t)+' hold'+((4-t)===1?'s':'')+
+    ' a colour you have not tested. '+placed();
+}
+
+function nextLine(){
+  const st=currentState();
+  if(st.cands.length===1)
+    return '<p>Only one code fits all '+st.guesses.length+' answers. This is it: '+pegSpan(st.cands[0])+'</p>';
+  const b=ranking[0];
+  if(b.inSet && b.worst===1)
+    return '<p><span class="num">'+st.cands.length+'</span> codes left, and any guess narrows it to one. Play '+
+      pegSpan(b.g)+' \u2014 a 1 in '+st.cands.length+' shot to end it here, certain next turn either way.</p>';
+  return '<p><span class="num">'+st.cands.length+'</span> codes still fit. Play '+pegSpan(b.g)+
+    ' next \u2014 worst case <span class="num">'+b.worst+'</span>. So: '+shortPlan(st.cands,b.g)+'.</p>'+
+    (plan(b.g)?'<p>'+plan(b.g)+'</p>':'');
+}
+
 function advise(){
   const st=currentState();
   if(st.guesses.some(function(g){return g.fb===SOLVED;})){
@@ -707,21 +827,58 @@ function advise(){
       '<p>Knuth\u2019s rule never needs more than five, and no rule can promise four.</p>','good');
     return;
   }
-  if(st.cands.length===1){ setCoach('<p>One code left: '+pegSpan(st.cands[0])+'. Play it.</p>','good'); return; }
+  if(st.guesses.length===0){
+    setCoach('<p>Play '+pegSpan(ranking[0].g)+' \u2014 two colours, two of each. No answer to that question is much '+
+      'more likely than any other, and the worst you can hear still leaves <span class="num">256</span> of 1,296.</p>'+
+      '<p>The colours are irrelevant here. <span class="num">90</span> different openings are exactly this good. '+
+      'Only the pattern of repeats does any work, because no colour means anything yet.</p>');
+    return;
+  }
+  if(st.cands.length===1){
+    setCoach('<p>Only one code fits all '+st.guesses.length+' answers. This is it: '+pegSpan(st.cands[0])+'</p>','good');
+    return;
+  }
   const best=ranking[0];
-  const note=best.inSet?'It could still be the answer outright.':'It cannot be the answer. It just splits the field better than anything that can.';
-  setCoach('<p>Play '+pegSpan(best.g)+' \u2014 whatever comes back, at most <span class="num">'+best.worst+'</span> of the '+st.cands.length+' codes survive.</p>'+
-    '<p>'+note+'</p>');
+  if(best.inSet && best.worst===1){
+    setCoach('<p><span class="num">'+st.cands.length+'</span> codes left, and any guess narrows it to one. '+
+      'So play one that could win: '+pegSpan(best.g)+'.</p>'+
+      '<p>A 1 in '+st.cands.length+' shot to end it here. If it misses, the answer is forced next turn.</p>','good');
+    return;
+  }
+  const note=best.inSet?'It could still be the answer outright.':'It cannot be the answer \u2014 it just splits the field better than anything that can.';
+  const la=lastAnswer();
+  setCoach((la?'<p>'+la+'</p>':'')+
+    '<p>Play '+pegSpan(best.g)+' \u2014 whatever comes back, at most <span class="num">'+best.worst+'</span> of the '+st.cands.length+' codes survive. So: '+shortPlan(st.cands,best.g)+'.</p>'+
+    '<p>'+note+'</p>'+
+    (plan(best.g)?'<p>'+plan(best.g)+'</p>':''));
 }
+
+function gradeOpening(played,worstAt){
+  const sh=shapeOf(played), info=OPENSHAPE[sh]||{n:0,name:'that shape'};
+  let head,tone;
+  if(sh==='22'){
+    head='<p>'+pegSpan(played)+' \u2014 two colours, two of each. Optimal, worst case <span class="num">256</span>, '+
+      'and <span class="num">'+(info.n-1)+'</span> other openings tie with it exactly. The colours never mattered, only the pattern.</p>';
+    tone='good';
+  }else{
+    head='<p>'+pegSpan(played)+' \u2014 '+info.name+'. Worst case <span class="num">'+worstAt+'</span>. '+
+      'Two colours, two of each caps it at <span class="num">256</span>, so that is '+(worstAt-256)+
+      ' extra codes carried into move 2.</p>';
+    tone='bad';
+  }
+  const la=lastAnswer();
+  setCoach(head+(la?'<p>'+la+'</p>':'')+nextLine(),tone);
+}
+
 function grade(played,worstAt,prevRank){
-  const best=prevRank[0], st=currentState(), ok=worstAt===best.worst;
+  const st=currentState();
+  if(st.guesses.length===1){ gradeOpening(played,worstAt); return; }
+  const best=prevRank[0], ok=worstAt===best.worst;
   const head = ok
     ? '<p>'+pegSpan(played)+' was optimal. Worst case <span class="num">'+worstAt+'</span>, and nothing beat it.</p>'
     : '<p>'+pegSpan(played)+' risked leaving <span class="num">'+worstAt+'</span> codes. '+pegSpan(best.g)+' would have capped it at <span class="num">'+best.worst+'</span>.</p>';
-  const next = st.cands.length===1
-    ? '<p><span class="num">1</span> code left: '+pegSpan(st.cands[0])+'. Play it.</p>'
-    : '<p><span class="num">'+st.cands.length+'</span> codes still fit. Play '+pegSpan(ranking[0].g)+' next \u2014 worst case <span class="num">'+ranking[0].worst+'</span>.</p>';
-  setCoach(head+next, ok?'good':'bad');
+  const la=lastAnswer();
+  setCoach(head+(la?'<p>'+la+'</p>':'')+nextLine(), ok?'good':'bad');
 }
 
 /* play */
@@ -746,7 +903,7 @@ function refresh(instant){
   document.getElementById('tLeft').textContent=st.cands.length;
   document.getElementById('fieldTtl').textContent =
     chipMode() ? 'The '+st.cands.length+' codes still alive' : 'Every code still alive';
-  const A=analyze(st.cands);
+  const A=analyze(st.cands); ANALYSIS=A;
   renderPencil(A); renderFacts(A,st.cands);
   renderBoard(); renderBars(); reflow(instant); syncPlay();
   document.getElementById('bBack').disabled=cursor===0;
