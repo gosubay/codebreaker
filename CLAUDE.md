@@ -122,6 +122,23 @@ reads both.
 
 UI copy uses British spelling ("colour"). Tone is plain and direct, no filler.
 
+### The move-1 explanation is locked (2026-09-03)
+Galvin chose the framing: **three jobs, four slots, and both extremes are worse.** Not
+"the algorithm sorts codes into piles" — that was rejected for restating the algorithm
+instead of explaining it. The shape is:
+
+1. A guess chases three things at once with only four slots — which colours are in the
+   code, how many of each, and where they sit. A slot spent on a new colour is a slot not
+   spent pinning down a colour already asked about, so nothing does all three well.
+2. Both extremes cost you. Worst case by opening shape, computed over all 1,296:
+   all-one-colour **625**, three-and-one **317**, four-different **312**,
+   pair-and-two-singles **276**, two-colours-twice-each **256**.
+   Only two of these ship: 625 and 312. The 317 line was cut for length.
+3. The colours are irrelevant — 90 openings tie exactly.
+
+Do not reintroduce the "piles" or "biggest bucket" wording into move 1. The mechanism is
+allowed to appear later, once the reader has a reason to care.
+
 ## Testing
 
 There is no test framework. Verification is done with throwaway Node scripts that reimplement

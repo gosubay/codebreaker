@@ -1013,10 +1013,17 @@ function advise(){
     return;
   }
   if(st.guesses.length===0){
-    setCoach('<p>Play '+pegSpan(ranking[0].g)+' \u2014 two colours, two of each. No answer to that question is much '+
-      'more likely than any other, and the worst you can hear still leaves <span class="num">256</span> of 1,296.</p>'+
-      '<p>The colours are irrelevant here. <span class="num">90</span> different openings are exactly this good. '+
-      'Only the pattern of repeats does any work, because no colour means anything yet.</p>');
+    setCoach('<p>Play '+pegSpan(ranking[0].g)+' \u2014 two colours, two of each. Every guess has to chase three things '+
+      'at once with only four slots: which colours are in the code, how many of each, and where they sit. A slot spent on '+
+      'a new colour is a slot not spent pinning down a colour you\u2019ve already asked about, so nothing does all three '+
+      'well. Two colours, twice each, is the best compromise there is \u2014 the worst answer still leaves '+
+      '<span class="num">256</span> codes alive out of 1,296.</p>'+
+      '<p>Push it either way and it costs you. Four of the same colour answers one thing perfectly \u2014 exactly how '+
+      'many reds \u2014 and nothing else, leaving as many as <span class="num">625</span>. Four different colours covers '+
+      'the most ground on <em>which</em> colours, but the reply is one pair of numbers for all four, so you can\u2019t '+
+      'tell which colour earned what: <span class="num">312</span>.</p>'+
+      '<p>The colours themselves are irrelevant here. <span class="num">90</span> different openings are exactly this '+
+      'good \u2014 only the pattern of repeats does any work, because no colour means anything yet.</p>');
     return;
   }
   if(st.cands.length===1){
