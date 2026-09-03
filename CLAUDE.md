@@ -101,6 +101,9 @@ the letters in `1b 3w` contradicted the colours on screen.
   the analyse entry grid. Do not add a second way to draw them.
 - Size per context with the custom properties `--td` (peg), `--th` (empty hole),
   `--tg` (gap), `--tp` (padding), `--tr` (corner). Never hard-code sizes on `.tray span`.
+- The grid tracks are **pinned to `--td`**, not `1fr`. Empty holes are smaller than pegs, so
+  content-sized tracks made `0b0w` visibly smaller than `4b0w`. Every tray must be the same
+  square whatever it holds.
 - A key sits under the board in **all three modes** (`.pegkey`). It is the only place the
   convention is explained, so it stays visible even in play mode.
 - **The tray styles are global, not inside a media query.** Anything that holds a tray and

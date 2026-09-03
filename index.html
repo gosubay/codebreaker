@@ -64,7 +64,8 @@ h1 em{font-style:normal;color:var(--ink-faint)}
 /* answer pegs, drawn like the real board: a pale tray, four holes,
    a black peg for the right slot and a white peg for the right colour in the wrong slot.
    Sized per context with --td (peg), --th (empty hole), --tg (gap), --tp (pad), --tr (radius). */
-.tray{display:grid;grid-template-columns:1fr 1fr;gap:var(--tg,3px);padding:var(--tp,3px);
+.tray{display:grid;grid-template-columns:repeat(2,var(--td,9px));grid-auto-rows:var(--td,9px);
+  gap:var(--tg,3px);padding:var(--tp,3px);
   border-radius:var(--tr,4px);flex:none;justify-items:center;align-items:center;
   background:linear-gradient(180deg,#AEB6C9,#939BB2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 1px 2px rgba(0,0,0,.45)}
