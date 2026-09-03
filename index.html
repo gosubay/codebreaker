@@ -253,6 +253,76 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   .picker .peg:hover{transform:translateY(-2px)}
   .picker .peg{transition:transform .12s}
 }
+/* ═══ MODES ═══ */
+.tabs{display:flex;gap:4px;background:var(--board-deep);border:1px solid var(--rule);
+  border-radius:11px;padding:4px;margin:0 0 16px}
+.tab{flex:1;background:transparent;border:0;border-radius:8px;padding:9px 5px;
+  font-family:inherit;font-size:13px;font-weight:600;color:var(--ink-dim);
+  transition:background .14s,color .14s;min-height:46px}
+.tab .th{display:block;font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-faint);font-weight:600;margin-top:3px}
+.tab[aria-selected=true]{background:var(--panel-hi);color:var(--ink);box-shadow:inset 0 0 0 1px var(--rule)}
+.tab[aria-selected=true] .th{color:var(--hot)}
+@media(hover:hover){.tab:hover:not([aria-selected=true]){color:var(--ink)}}
+
+.result{display:none;margin-top:12px;padding:11px 13px;border-radius:9px;font-size:13.5px;
+  background:rgba(79,191,127,.12);box-shadow:inset 0 0 0 1px rgba(79,191,127,.45)}
+.result.show{display:block}
+.result.miss{background:rgba(242,160,61,.12);box-shadow:inset 0 0 0 1px rgba(242,160,61,.45)}
+.result .inline{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
+.result .inline span{width:16px;height:16px;border-radius:50%}
+
+.ecap{font-size:12.5px;color:var(--ink-dim);margin:0 0 11px;min-height:19px}
+.ecap .inline{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
+.ecap .inline span{width:16px;height:16px;border-radius:50%}
+.fbgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.fbo{display:flex;align-items:center;gap:9px;background:var(--panel-hi);border:1px solid var(--rule);
+  border-radius:8px;padding:8px 10px;min-height:44px;font-family:inherit;font-size:12px;color:inherit;
+  transition:background .12s,border-color .12s}
+.fbo:disabled{opacity:.26;cursor:default}
+.fq{display:grid;grid-template-columns:1fr 1fr;gap:3px;flex:none}
+.fq span{width:8px;height:8px;border-radius:50%;background:#0A0D16;box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
+.fq span.b{background:#F5F7FF;box-shadow:none}
+.fq span.w{background:transparent;box-shadow:inset 0 0 0 1.4px #7F8AAB}
+.fbo .ftxt{font-family:var(--mono);font-size:11.5px}
+.fbo .cnt{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-left:auto}
+@media(hover:hover){.fbo:hover:not(:disabled){background:#323C5C;border-color:#46527A}}
+
+/* Play — the board, and nothing that would help you */
+body[data-mode=play] .a-field,
+body[data-mode=play] .a-hist,
+body[data-mode=play] .a-know,
+body[data-mode=play] .a-coach,
+body[data-mode=play] .a-entry,
+body[data-mode=play] #bTake,
+body[data-mode=play] #row3,
+body[data-mode=play] .t-left{display:none}
+body[data-mode=play] .board{padding:12px;gap:7px}
+body[data-mode=play] .board .peg{width:38px;height:38px}
+body[data-mode=play] .board .pegs{gap:10px}
+body[data-mode=play] .board .row{gap:13px;padding:9px 10px}
+body[data-mode=play] .board .idx{font-size:13px;width:17px}
+body[data-mode=play] .board .fp{width:11px;height:11px}
+
+/* Analyse — no secret to reveal, and answers are typed rather than computed */
+body[data-mode=analyse] #row3,
+body[data-mode=analyse] #bPlay{display:none}
+body:not([data-mode=analyse]) .a-entry{display:none}
+body:not([data-mode=play]) .result{display:none}
+
+@media(min-width:881px){
+  .tabs{max-width:600px;margin-bottom:20px}
+  .tab{font-size:12.5px;padding:8px 6px;min-height:0}
+  .fbo{min-height:0;padding:7px 9px}
+  .a-entry{grid-area:entry}
+  body[data-mode=play] .grid{grid-template-columns:minmax(0,540px);
+    grid-template-areas:"board" "ctrl";justify-content:center}
+  body[data-mode=play] .board .peg{width:44px;height:44px}
+  body[data-mode=play] .board .pegs{gap:12px}
+  body[data-mode=play] .picker{gap:10px}
+  body[data-mode=play] .picker .peg{width:40px;height:40px}
+  body[data-mode=analyse] .grid{grid-template-areas:"board field" "entry hist" "know hist" "coach coach" "ctrl ctrl"}
+}
 footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
   display:flex;flex-direction:column;gap:5px}
 .fname{font-size:12.5px;color:var(--ink-dim);font-weight:600}
@@ -275,14 +345,21 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
     </div>
     <div class="tally">
       <div><div class="n" id="tTurn">1</div><div class="k">Guess</div></div>
-      <div><div class="n live" id="tLeft">1296</div><div class="k">Left</div></div>
+      <div class="t-left"><div class="n live" id="tLeft">1296</div><div class="k">Left</div></div>
     </div>
   </header>
+
+  <div class="tabs" role="tablist" aria-label="Mode">
+    <button class="tab" role="tab" data-mode="play" aria-selected="false">Play<span class="th">no help</span></button>
+    <button class="tab" role="tab" data-mode="coach" aria-selected="true">Coach<span class="th">shows its work</span></button>
+    <button class="tab" role="tab" data-mode="analyse" aria-selected="false">Analyse<span class="th">a real board</span></button>
+  </div>
 
   <div class="grid">
     <div class="panel a-board">
       <div class="ttl">The board</div>
       <div class="board" id="board"></div>
+      <div class="result" id="result"></div>
       <div class="gbar">
         <div class="picker" id="picker"></div>
         <button class="btn go" id="bPlay" disabled>Play</button>
@@ -291,10 +368,16 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
         <button class="btn sm" id="bTake">Use suggestion</button>
         <button class="btn sm" id="bClear">Clear</button>
       </div>
-      <div class="btnrow">
+      <div class="btnrow" id="row3">
         <button class="btn sm" id="bAuto">Solver plays</button>
         <button class="btn sm" id="bPeek">Show code</button>
       </div>
+    </div>
+
+    <div class="panel a-entry">
+      <div class="ttl">The answer you were given</div>
+      <p class="ecap" id="ecap"></p>
+      <div class="fbgrid" id="fbgrid"></div>
     </div>
 
     <div class="coach a-coach" id="coach"><p>Loading…</p></div>
@@ -398,7 +481,7 @@ let buildRow=0;
   buildRow=end;
   document.getElementById('lf').style.width=(buildRow/N*100)+'%';
   if(buildRow<N) requestAnimationFrame(buildChunk);
-  else{ document.getElementById('load').style.display='none'; newGame(); }
+  else{ document.getElementById('load').style.display='none'; syncModeChrome(); newGame(); }
 })();
 
 function rankAll(cands){
@@ -483,20 +566,58 @@ function renderFacts(A,cands){
 }
 
 /* state */
+let mode='coach';
 let secret=0, states=[], cursor=0, draft=[null,null,null,null], selSlot=0;
 let ANALYSIS=null;
 let ranking=null, scrubIdx=0, hoverBucket=-1, pinBucket=-1, grouped=false, auto=false, peek=false;
 const currentState=function(){return states[cursor];};
 const activeBucket=function(){return pinBucket>=0?pinBucket:hoverBucket;};
 
+/* modes — play: board only, no ranking computed at all
+             coach: everything, the app knows the code
+             analyse: everything, you type the answers, there is no code */
+const SNAP={};
+const SUBTITLE={
+  play:'Four pegs, six colours, 1,296 possible codes, and nobody helping you.',
+  coach:'The board game Mastermind, and Knuth’s 1977 rule that cracks any of its 1,296 codes in five guesses.',
+  analyse:'Playing on a real board? Key in the guesses you made and the answers you got, and the solver takes it from there.'
+};
+function snapshot(){
+  return {secret:secret,states:states,cursor:cursor,draft:draft.slice(),selSlot:selSlot,
+    ranking:ranking,scrubIdx:scrubIdx,pinBucket:pinBucket,grouped:grouped,peek:peek,dots:dots};
+}
+function restore(s){
+  secret=s.secret; states=s.states; cursor=s.cursor; draft=s.draft; selSlot=s.selSlot;
+  ranking=s.ranking; scrubIdx=s.scrubIdx; pinBucket=s.pinBucket; grouped=s.grouped;
+  peek=s.peek; dots=s.dots; hoverBucket=-1; auto=false;
+}
+function stopAuto(){
+  auto=false; clearTimeout(autoTimer);
+  const b=document.getElementById('bAuto'); b.classList.remove('on'); b.textContent='Solver plays';
+}
+function reAdvise(){ if(mode==='play') renderResult(); else advise(); }
+function syncModeChrome(){
+  document.getElementById('bNew').textContent = mode==='analyse' ? 'Start over' : 'New code';
+  document.querySelector('.sub').textContent = SUBTITLE[mode];
+  document.body.setAttribute('data-mode',mode);
+  const tabs=document.querySelectorAll('.tab');
+  for(let i=0;i<tabs.length;i++) tabs[i].setAttribute('aria-selected',String(tabs[i].dataset.mode===mode));
+}
+function setMode(m){
+  if(m===mode||!states.length) return;
+  stopAuto(); SNAP[mode]=snapshot();
+  mode=m; syncModeChrome();
+  if(SNAP[m]){ restore(SNAP[m]); refresh(true); reAdvise(); }
+  else newGame();
+}
 function newGame(){
-  secret=(Math.random()*N)|0;
   const all=new Int32Array(N); for(let i=0;i<N;i++) all[i]=i;
-  states=[{cands:all,guesses:[]}]; cursor=0; peek=false; auto=false; pinBucket=-1;
-  const ba=document.getElementById('bAuto'); ba.classList.remove('on'); ba.textContent='Solver plays';
+  states=[{cands:all,guesses:[]}]; cursor=0; peek=false; pinBucket=-1; hoverBucket=-1; grouped=false;
+  secret = mode==='analyse' ? -1 : (Math.random()*N)|0;
+  stopAuto();
   const bp=document.getElementById('bPeek'); bp.classList.remove('on'); bp.textContent='Show code';
-  draft=[null,null,null,null]; selSlot=0;
-  refresh(true); advise();
+  draft=[null,null,null,null]; selSlot=0; dots=new Map();
+  refresh(true); reAdvise();
 }
 function pegEl(c,cls){
   const d=document.createElement('div');
@@ -534,16 +655,66 @@ function renderPicker(){
     const e=pegEl(c); e.style.cursor='pointer';
     e.onclick=(function(cc){return function(){
       draft[selSlot]=cc; const nx=draft.indexOf(null); selSlot=nx<0?3:nx;
-      renderBoard(); syncPlay();
+      draftChanged();
     };})(c);
     p.appendChild(e);
   }
 }
 function syncPlay(){
   const live=cursor===states.length-1;
-  const done=currentState().guesses.some(function(g){return g.fb===SOLVED;});
-  document.getElementById('bPlay').disabled=!live||done||draft.indexOf(null)>=0;
-  document.getElementById('bTake').disabled=!live||done;
+  const st=currentState();
+  /* the board stops drawing rows at 9, so nothing may be played past it */
+  const done=st.guesses.some(function(g){return g.fb===SOLVED;})||st.guesses.length>=9;
+  document.getElementById('bPlay').disabled=!live||done||draft.indexOf(null)>=0||mode==='analyse';
+  document.getElementById('bTake').disabled=!live||done||!ranking;
+}
+function syncSortBtn(){
+  const bs=document.getElementById('bSort');
+  bs.classList.toggle('on',grouped); bs.textContent=grouped?'Ungroup':'Group by outcome';
+}
+function draftChanged(){ renderBoard(); syncPlay(); if(mode==='analyse') renderEntry(); }
+
+/* analyse — you type the answer, so only answers some surviving code could give are offered */
+function fbQuad(i){
+  const d=el('div','fq');
+  for(let k=0;k<4;k++) d.appendChild(el('span',k<FB[i].b?'b':(k<FB[i].b+FB[i].w?'w':'')));
+  return d;
+}
+function renderEntry(){
+  const st=currentState(), box=document.getElementById('fbgrid'); box.innerHTML='';
+  const solved=st.guesses.some(function(g){return g.fb===SOLVED;});
+  const done=solved||st.guesses.length>=9;
+  const live=cursor===states.length-1;
+  const ready=!done&&live&&draft.indexOf(null)<0;
+  const g=ready?(draft[0]*216+draft[1]*36+draft[2]*6+draft[3]):-1;
+  const bk=ready?bucketsFor(g,st.cands):null;
+  document.getElementById('ecap').innerHTML = solved
+    ? 'Solved. The code is '+pegSpan(st.cands[0])+'.'
+    : done ? 'Nine guesses is as far as the board goes. Start over to key in another game.'
+    : !live ? 'Rewound. Step forward to the last guess to key in another answer.'
+    : !ready ? 'Set four pegs on the board above, then pick the answer that guess was given.'
+    : 'You played '+pegSpan(g)+'. What came back?';
+  for(let i=0;i<NB;i++){
+    const n=ready?bk[i].length:0;
+    const b=document.createElement('button');
+    b.className='fbo'; b.disabled=!ready||n===0;
+    b.appendChild(fbQuad(i));
+    b.appendChild(el('span','ftxt',FB[i].b+'b '+FB[i].w+'w'));
+    b.appendChild(el('span','cnt',ready?(n+' left'):'–'));
+    b.onclick=(function(ii){return function(){playGuess(g,ii);};})(i);
+    box.appendChild(b);
+  }
+}
+function renderResult(){
+  const r=document.getElementById('result'), st=currentState(), n=st.guesses.length;
+  if(n&&st.guesses[n-1].fb===SOLVED){
+    r.className='result show';
+    r.innerHTML='Cracked in <span class="num">'+n+'</span>. '+
+      (n<=5 ? 'Knuth’s rule never needs more than five.' : 'Knuth’s rule would have capped it at five.');
+  }else if(n>=9){
+    r.className='result show miss';
+    r.innerHTML='Nine guesses gone. The code was '+pegSpan(secret)+'.';
+  }else r.className='result';
 }
 
 /* histogram */
@@ -695,10 +866,10 @@ function paintField(){
   });
   ctx.globalAlpha=1;
 }
-addEventListener('resize',function(){ if(states.length&&!chipMode()) reflow(true); });
+addEventListener('resize',function(){ if(mode!=='play'&&states.length&&!chipMode()) reflow(true); });
 MQ.addEventListener('change',function(e){
   narrow=e.matches;
-  if(!states.length) return;
+  if(!states.length||mode==='play') return;
   renderBars(); if(!chipMode()) reflow(true);
 });
 
@@ -823,7 +994,7 @@ function nextLine(){
 function advise(){
   const st=currentState();
   if(st.guesses.some(function(g){return g.fb===SOLVED;})){
-    setCoach('<p>Cracked in <span class="num">'+st.guesses.length+'</span>. The code was '+pegSpan(secret)+'.</p>'+
+    setCoach('<p>Cracked in <span class="num">'+st.guesses.length+'</span>. The code was '+pegSpan(st.cands[0])+'.</p>'+
       '<p>Knuth\u2019s rule never needs more than five, and no rule can promise four.</p>','good');
     return;
   }
@@ -882,36 +1053,42 @@ function grade(played,worstAt,prevRank){
 }
 
 /* play */
-function playGuess(g){
+function playGuess(g,forced){
   const st=currentState(), prevRank=ranking;
-  const f=TABLE[g*N+secret];
+  const f = forced===undefined ? TABLE[g*N+secret] : forced;
   const bk=bucketsFor(g,st.cands);
+  if(!bk[f].length) return;
   let worstAt=0; for(let i=0;i<NB;i++) if(bk[i].length>worstAt) worstAt=bk[i].length;
   states=states.slice(0,cursor+1);
   states.push({cands:Int32Array.from(bk[f]),guesses:st.guesses.concat([{g:g,fb:f}])});
   cursor=states.length-1; draft=[null,null,null,null]; selSlot=0;
   refresh(false);
+  if(mode==='play') return;
   if(f===SOLVED) advise(); else if(prevRank) grade(g,worstAt,prevRank);
 }
 function refresh(instant){
   const st=currentState();
+  document.getElementById('tTurn').textContent=Math.min(st.guesses.length+1,9);
+  document.getElementById('tLeft').textContent=st.cands.length;
+  document.getElementById('bBack').disabled=cursor===0;
+  document.getElementById('bFwd').disabled=cursor>=states.length-1;
+  /* play shows none of the analysis, so it never pays for the ranking */
+  if(mode==='play'){ ranking=null; renderBoard(); syncPlay(); renderResult(); return; }
   ranking = st.cands.length>1 ? rankAll(st.cands) : [{g:st.cands[0]||0,worst:1,inSet:1}];
   scrubIdx=0; hoverBucket=-1; pinBucket=-1;
   const sl=document.getElementById('slider');
   sl.max=Math.max(0,ranking.length-1); sl.value=0; sl.disabled=ranking.length<2;
-  document.getElementById('tTurn').textContent=Math.min(st.guesses.length+1,9);
-  document.getElementById('tLeft').textContent=st.cands.length;
   document.getElementById('fieldTtl').textContent =
     chipMode() ? 'The '+st.cands.length+' codes still alive' : 'Every code still alive';
   const A=analyze(st.cands); ANALYSIS=A;
   renderPencil(A); renderFacts(A,st.cands);
-  renderBoard(); renderBars(); reflow(instant); syncPlay();
-  document.getElementById('bBack').disabled=cursor===0;
-  document.getElementById('bFwd').disabled=cursor>=states.length-1;
+  renderBoard(); renderBars(); reflow(instant); syncPlay(); syncSortBtn();
+  if(mode==='analyse') renderEntry();
 }
 
 /* wiring */
 function setScrub(v){
+  if(!ranking) return;
   scrubIdx=v; hoverBucket=-1; pinBucket=-1;
   document.getElementById('slider').value=v;
   renderBars();
@@ -923,35 +1100,39 @@ document.getElementById('jBest').onclick=function(){ setScrub(0); };
 document.getElementById('jMid').onclick=function(){ setScrub(Math.floor((ranking.length-1)/2)); };
 document.getElementById('jWorst').onclick=function(){ setScrub(ranking.length-1); };
 document.getElementById('bPlay').onclick=function(){ playGuess(draft[0]*216+draft[1]*36+draft[2]*6+draft[3]); };
-document.getElementById('bClear').onclick=function(){draft=[null,null,null,null];selSlot=0;renderBoard();syncPlay();};
-document.getElementById('bTake').onclick=function(){draft=digits(ranking[0].g);selSlot=0;renderBoard();syncPlay();};
+document.getElementById('bClear').onclick=function(){draft=[null,null,null,null];selSlot=0;draftChanged();};
+document.getElementById('bTake').onclick=function(){if(!ranking)return;draft=digits(ranking[0].g);selSlot=0;draftChanged();};
 document.getElementById('bSort').onclick=function(e){
   grouped=!grouped; e.target.classList.toggle('on',grouped);
   e.target.textContent=grouped?'Ungroup':'Group by outcome';
   reflow(false);
 };
 document.getElementById('bPeek').onclick=function(e){
+  if(mode!=='coach') return;
   peek=!peek; e.target.classList.toggle('on',peek);
   e.target.textContent=peek?'Hide code':'Show code';
   if(peek) setCoach('<p>The code is '+pegSpan(secret)+'.</p><p>Only you can see this. Hide it before you record.</p>');
   else advise();
 };
 document.getElementById('bNew').onclick=newGame;
-document.getElementById('bBack').onclick=function(){ if(cursor>0){cursor--;refresh(false);advise();} };
-document.getElementById('bFwd').onclick=function(){ if(cursor<states.length-1){cursor++;refresh(false);advise();} };
+document.getElementById('bBack').onclick=function(){ if(cursor>0){cursor--;refresh(false);reAdvise();} };
+document.getElementById('bFwd').onclick=function(){ if(cursor<states.length-1){cursor++;refresh(false);reAdvise();} };
+(function(){
+  const tabs=document.querySelectorAll('.tab');
+  for(let i=0;i<tabs.length;i++)
+    tabs[i].onclick=(function(m){return function(){setMode(m);};})(tabs[i].dataset.mode);
+})();
 
 let autoTimer=null;
 document.getElementById('bAuto').onclick=function(e){
+  if(mode!=='coach') return;
   auto=!auto; e.target.classList.toggle('on',auto);
   e.target.textContent=auto?'Stop solver':'Solver plays';
   if(auto) step(); else clearTimeout(autoTimer);
 };
 function step(){
   const st=currentState();
-  if(!auto||st.guesses.some(function(g){return g.fb===SOLVED;})){
-    auto=false; const b=document.getElementById('bAuto');
-    b.classList.remove('on'); b.textContent='Solver plays'; return;
-  }
+  if(!auto||mode!=='coach'||!ranking||st.guesses.some(function(g){return g.fb===SOLVED;})){ stopAuto(); return; }
   playGuess(ranking[0].g);
   autoTimer=setTimeout(step,1600);
 }
