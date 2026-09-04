@@ -1,6 +1,6 @@
 # HANDOFF — Codebreaker
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ## Where the repo lives
 `C:\Claude\Code\Mastermind\codebreaker` — cloned from `gosubay/codebreaker`.
@@ -35,6 +35,17 @@ Two things this shook out, both fixed:
   invisible by accident. Tray styles are global, so on mobile it briefly rendered as a
   stack of stretched pale bars. It now has an explicit `display:none`.
 
+## Coach copy + rewind fix (2026-09-04)
+- **Guess-1 explanation rewritten.** Was a one-liner about "no answer being much more
+  likely" and "the worst you can hear" — a metaphor never set up. Now three paragraphs:
+  a guess chases three things with four slots, and both extremes cost you (625 for four of
+  one colour, 312 for four different, 256 for two-and-two). Figures computed over all
+  1,296, table in CLAUDE.md.
+- **Analyse: Back no longer dead-ends.** Rewinding used to grey out the draft row, both
+  buttons and all 14 answers, so the only way out was Forward or Start over. In analyse the
+  answers are typed by hand, so a wrong one must be fixable. New `liveEdit()` helper; the
+  caption warns how many later moves a re-answer replaces. Play and coach unchanged.
+
 ## Verified (not assumed)
 - `node verify-all-games.js` runs the **shipped** `<script>` under a DOM shim and plays
   all 1,296 games: total 5801, average 4.4761, worst 5, distribution 1/6/62/533/694.
@@ -52,6 +63,9 @@ Two things this shook out, both fixed:
 - **Mobile guess bar overflows at 375px.** Six 44px pegs plus gaps plus an 88px Play
   button needs ~424px inside a 375px screen, so Play is clipped off the right edge.
   Pre-existing, affects every mode, not yet fixed. One-line fix available.
+- **Back/Forward sit at the very bottom of the analyse page** (~2500px down of 2769),
+  far below the entry grid you are actually working in. Galvin did not find them at first.
+  Not moved — that is a layout decision, not a bug.
 - The loading bar only advances while the tab is visible (`requestAnimationFrame`), so
   opening the page in a background tab looks stalled until you click over to it.
 

@@ -55,6 +55,32 @@ of the board or the solver anywhere — a tab is a visibility state, not a scree
 - Play mode must never surface anything derived from the candidate set: no counts, no
   suggestion, no coach. The `Left` tally is hidden there for that reason.
 - Both modes stop at 9 guesses, because `renderBoard` stops drawing rows at 9.
+- **Rewinding is a review in play and coach, but an edit in analyse.** `liveEdit()` is the
+  single test for "may I still set pegs here": `cursor === states.length-1 || mode === 'analyse'`.
+  It gates the draft row in `renderBoard`, both buttons in `syncPlay`, and `ready` in
+  `renderEntry`. In analyse the answers were typed by hand, so a mistyped one has to be
+  fixable; `playGuess` already truncates `states` after the cursor, so re-answering just
+  branches the game from that move. The entry caption says how many moves that drops.
+  Do not re-add a bare `cursor === states.length-1` in those three places.
+
+## Coach copy — the opening (rewritten 2026-09-04)
+
+The guess-1 explanation is deliberately **not** a restatement of the algorithm. It says a
+guess has to chase three things with four slots (which colours, how many of each, where
+they sit), then shows both extremes costing you. Every figure in it is computed, not
+quoted — worst case by opening shape over all 1,296:
+
+| shape | example | worst case |
+|---|---|---|
+| `4` all one colour | 6666 | 625 |
+| `31` | 6661 | 317 |
+| `1111` four different | 1234 | 312 |
+| `211` pair + two singles | 1123 | 276 |
+| `22` **two colours, two of each** | 1122 | **256** |
+
+Note `22` produces only 13 distinct answers while `1111` and `211` produce all 14 — more
+possible answers is *not* the criterion, so never explain it that way. Galvin rejected the
+"sorting codes into piles" framing as just repeating the algorithm; keep the copy human.
 
 ## Verified numbers — computed here, do not trust cited figures
 
