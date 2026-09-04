@@ -63,6 +63,15 @@ of the board or the solver anywhere — a tab is a visibility state, not a scree
   branches the game from that move. The entry caption says how many moves that drops.
   Do not re-add a bare `cursor === states.length-1` in those three places.
 
+## The mode bar (moved 2026-09-04)
+
+`.modebar` holds the tab bar and the Back / Forward / New code row together, directly under
+the header. Column on a phone, one row on desktop with the controls pushed right by
+`margin-left:auto` so they line up with the grid's right edge. They used to sit in the grid
+as `.a-ctrl` at the foot of the page, ~2,500px below the analyse entry grid, which is where
+you actually use them. The `ctrl` area and the `.spacer` that right-aligned New code inside
+that old row are both gone — do not re-add `ctrl` to any `grid-template-areas`.
+
 ## Coach copy — the opening (rewritten 2026-09-04)
 
 The guess-1 explanation is deliberately **not** a restatement of the algorithm. It says a

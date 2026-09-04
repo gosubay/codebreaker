@@ -192,7 +192,6 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .num{font-family:var(--mono);font-weight:700}
 .controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .controls .btn{flex:1}
-.spacer{display:none}
 
 #load{position:fixed;inset:0;background:var(--board);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:60}
 #load .lt{font-family:var(--mono);font-size:12px;color:var(--ink-dim);letter-spacing:.05em}
@@ -212,13 +211,12 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   body{font-size:14px}
 
   .grid{display:grid;grid-template-columns:302px 1fr;gap:20px;align-items:start;
-    grid-template-areas:"board field" "know hist" "coach coach" "ctrl ctrl"}
+    grid-template-areas:"board field" "know hist" "coach coach"}
   .a-board{grid-area:board}
   .a-know{grid-area:know}
   .a-field{grid-area:field}
   .a-hist{grid-area:hist}
   .a-coach{grid-area:coach}
-  .a-ctrl{grid-area:ctrl}
   .panel{padding:15px}
 
   .peg{width:22px;height:22px}
@@ -261,7 +259,6 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
   input[type=range]::-webkit-slider-thumb{width:15px;height:15px;margin-top:-5px;border-width:2px}
   input[type=range]::-moz-range-thumb{width:15px;height:15px;border-width:2px}
   .controls .btn{flex:none}
-  .spacer{display:block;flex:1}
   .coach p{font-size:13.5px;line-height:1.7}
 }
 @media(min-width:881px) and (hover:hover){
@@ -280,6 +277,12 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .tab[aria-selected=true]{background:var(--panel-hi);color:var(--ink);box-shadow:inset 0 0 0 1px var(--rule)}
 .tab[aria-selected=true] .th{color:var(--hot)}
 @media(hover:hover){.tab:hover:not([aria-selected=true]){color:var(--ink)}}
+
+/* back / forward / new code ride with the tab bar. They used to sit at the foot of the
+   page, ~2,500px below the entry grid you are actually working in. Stacked under the tabs
+   on a phone, pushed to the right of them on desktop. */
+.modebar{display:flex;flex-direction:column;gap:9px;margin:0 0 16px}
+.modebar .tabs{margin:0}
 
 .result{display:none;margin-top:12px;padding:11px 13px;border-radius:9px;font-size:13.5px;
   background:rgba(79,191,127,.12);box-shadow:inset 0 0 0 1px rgba(79,191,127,.45)}
@@ -326,7 +329,10 @@ body:not([data-mode=analyse]) .a-entry{display:none}
 body:not([data-mode=play]) .result{display:none}
 
 @media(min-width:881px){
-  .tabs{max-width:600px;margin-bottom:20px}
+  .modebar{flex-direction:row;align-items:center;gap:14px;margin-bottom:20px}
+  .modebar .tabs{flex:1;margin:0}
+  .modebar .controls{margin-left:auto;flex:none}
+  .tabs{max-width:600px}
   .tab{font-size:12.5px;padding:8px 6px;min-height:0}
   .fbo{min-height:0;padding:6px 8px;gap:7px}
   .fbo .tray{--td:8.5px;--th:4.5px;--tg:2.5px;--tp:2.5px;--tr:4px}
@@ -334,12 +340,12 @@ body:not([data-mode=play]) .result{display:none}
   .fbo .cnt{font-size:10px}
   .a-entry{grid-area:entry}
   body[data-mode=play] .grid{grid-template-columns:minmax(0,540px);
-    grid-template-areas:"board" "ctrl";justify-content:center}
+    grid-template-areas:"board";justify-content:center}
   body[data-mode=play] .board .peg{width:44px;height:44px}
   body[data-mode=play] .board .pegs{gap:12px}
   body[data-mode=play] .picker{gap:10px}
   body[data-mode=play] .picker .peg{width:40px;height:40px}
-  body[data-mode=analyse] .grid{grid-template-areas:"board field" "entry hist" "know hist" "coach coach" "ctrl ctrl"}
+  body[data-mode=analyse] .grid{grid-template-areas:"board field" "entry hist" "know hist" "coach coach"}
 }
 footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
   display:flex;flex-direction:column;gap:5px}
@@ -367,10 +373,17 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
     </div>
   </header>
 
-  <div class="tabs" role="tablist" aria-label="Mode">
-    <button class="tab" role="tab" data-mode="play" aria-selected="false">Play<span class="th">no help</span></button>
-    <button class="tab" role="tab" data-mode="coach" aria-selected="true">Coach<span class="th">shows its work</span></button>
-    <button class="tab" role="tab" data-mode="analyse" aria-selected="false">Analyse<span class="th">a real board</span></button>
+  <div class="modebar">
+    <div class="tabs" role="tablist" aria-label="Mode">
+      <button class="tab" role="tab" data-mode="play" aria-selected="false">Play<span class="th">no help</span></button>
+      <button class="tab" role="tab" data-mode="coach" aria-selected="true">Coach<span class="th">shows its work</span></button>
+      <button class="tab" role="tab" data-mode="analyse" aria-selected="false">Analyse<span class="th">a real board</span></button>
+    </div>
+    <div class="controls">
+      <button class="btn sm" id="bBack">◀ Back</button>
+      <button class="btn sm" id="bFwd">Forward ▶</button>
+      <button class="btn sm" id="bNew">New code</button>
+    </div>
   </div>
 
   <div class="grid">
@@ -451,12 +464,6 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
       <div class="facts" id="facts"></div>
     </div>
 
-    <div class="controls a-ctrl">
-      <button class="btn sm" id="bBack">◀ Back</button>
-      <button class="btn sm" id="bFwd">Forward ▶</button>
-      <div class="spacer"></div>
-      <button class="btn sm" id="bNew">New code</button>
-    </div>
   </div>
 
   <footer>

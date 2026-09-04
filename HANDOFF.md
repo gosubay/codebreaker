@@ -46,6 +46,12 @@ Two things this shook out, both fixed:
   answers are typed by hand, so a wrong one must be fixable. New `liveEdit()` helper; the
   caption warns how many later moves a re-answer replaces. Play and coach unchanged.
 
+## Mode bar (2026-09-04)
+Back / Forward / New code moved off the foot of the page into a shared row with the three
+tabs. Desktop: tabs left, buttons right, flush with the grid edge (measured 967px against a
+967px grid). Mobile: buttons stack directly under the tabs, both visible without scrolling.
+In analyse they now sit 400px *above* the entry grid instead of 2,000px below it.
+
 ## Verified (not assumed)
 - `node verify-all-games.js` runs the **shipped** `<script>` under a DOM shim and plays
   all 1,296 games: total 5801, average 4.4761, worst 5, distribution 1/6/62/533/694.
@@ -63,9 +69,6 @@ Two things this shook out, both fixed:
 - **Mobile guess bar overflows at 375px.** Six 44px pegs plus gaps plus an 88px Play
   button needs ~424px inside a 375px screen, so Play is clipped off the right edge.
   Pre-existing, affects every mode, not yet fixed. One-line fix available.
-- **Back/Forward sit at the very bottom of the analyse page** (~2500px down of 2769),
-  far below the entry grid you are actually working in. Galvin did not find them at first.
-  Not moved — that is a layout decision, not a bug.
 - The loading bar only advances while the tab is visible (`requestAnimationFrame`), so
   opening the page in a background tab looks stalled until you click over to it.
 
