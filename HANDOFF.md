@@ -45,6 +45,9 @@ Two things this shook out, both fixed:
   buttons and all 14 answers, so the only way out was Forward or Start over. In analyse the
   answers are typed by hand, so a wrong one must be fixable. New `liveEdit()` helper; the
   caption warns how many later moves a re-answer replaces. Play and coach unchanged.
+- **Back lands on step 2, not step 1.** A move is "set pegs" then "pick answer"; Back now
+  restores the pegs you played, so you land straight on "what came back?". Forward onto the
+  live move clears them again.
 
 ## Mode bar (2026-09-04)
 Back / Forward / New code moved off the foot of the page into a shared row with the three

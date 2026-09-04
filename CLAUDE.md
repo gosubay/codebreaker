@@ -62,6 +62,12 @@ of the board or the solver anywhere — a tab is a visibility state, not a scree
   fixable; `playGuess` already truncates `states` after the cursor, so re-answering just
   branches the game from that move. The entry caption says how many moves that drops.
   Do not re-add a bare `cursor === states.length-1` in those three places.
+- **Back reopens the answer, not the guess.** A move in analyse is two steps: set the pegs,
+  then pick the answer. `syncDraftToCursor()` runs on every Back/Forward and puts the guess
+  that was played from the new cursor back on the draft row (`states[k+1].guesses[k].g` is
+  the guess played from state `k`), so one Back lands on step 2, not step 1. Stepping
+  forward onto the live state clears the draft again. Analyse only — in coach the draft row
+  does not render while rewound, so prefilling it there would be invisible and confusing.
 
 ## The mode bar (moved 2026-09-04)
 

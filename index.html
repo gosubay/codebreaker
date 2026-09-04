@@ -603,6 +603,14 @@ const currentState=function(){return states[cursor];};
    in yourself, so you are allowed to retype one. playGuess already truncates the states
    after the cursor, so re-answering simply branches the game from that move. */
 const liveEdit=function(){return cursor===states.length-1||mode==='analyse';};
+/* analyse only: stepping back should land you at "what came back?", not at an empty board.
+   The guess played from this move goes back on the draft row, so Back reopens the answer
+   rather than the guess. states[k+1].guesses[k] is the guess played from state k. */
+function syncDraftToCursor(){
+  if(mode!=='analyse') return;
+  draft = cursor<states.length-1 ? digits(states[cursor+1].guesses[cursor].g) : [null,null,null,null];
+  selSlot=0;
+}
 const activeBucket=function(){return pinBucket>=0?pinBucket:hoverBucket;};
 
 /* modes — play: board only, no ranking computed at all
@@ -1148,8 +1156,8 @@ document.getElementById('bPeek').onclick=function(e){
   else advise();
 };
 document.getElementById('bNew').onclick=newGame;
-document.getElementById('bBack').onclick=function(){ if(cursor>0){cursor--;refresh(false);reAdvise();} };
-document.getElementById('bFwd').onclick=function(){ if(cursor<states.length-1){cursor++;refresh(false);reAdvise();} };
+document.getElementById('bBack').onclick=function(){ if(cursor>0){cursor--;syncDraftToCursor();refresh(false);reAdvise();} };
+document.getElementById('bFwd').onclick=function(){ if(cursor<states.length-1){cursor++;syncDraftToCursor();refresh(false);reAdvise();} };
 (function(){
   const tabs=document.querySelectorAll('.tab');
   for(let i=0;i<tabs.length;i++)
