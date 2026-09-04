@@ -289,6 +289,24 @@ not catch what it cannot see.
 - `nameList` / `nameListOr` join through `joinNames`: English serialises with commas and a
   final and/or, Chinese uses `、` with no spaces around the conjunction.
 
+### The tutorial link
+
+`foot.tutorial` in the footer is the one string where **the destination changes with the
+language, not just the wording**. English points at YouTube, Chinese at Bilibili, because
+YouTube is unreachable from mainland China without a VPN. It is stored as a whole anchor
+and rendered through `data-i18n-html`, so both halves stay in `STR` together and cannot
+drift apart. Same video, both sides:
+
+| | label | destination |
+|---|---|---|
+| en | Strategy Tutorial | `https://youtu.be/owMLcNjZOhs` |
+| zh | 策略教程 | `https://www.bilibili.com/video/BV1T9tB6ZEQP/` |
+
+It sits directly under the name line, above the algorithm line — the footer is the only
+place visible in all three modes at every width. It is deliberately not in the header:
+`.sub` is `display:none` below 881px, so a link there would be invisible on a phone.
+`.fmeta a` had no colour until this went in.
+
 ### Chinese-specific rules
 
 - **A space between Latin numerals and Han characters**, on both sides — `还剩 46 种`, not

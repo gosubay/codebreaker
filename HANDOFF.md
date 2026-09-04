@@ -92,6 +92,14 @@ mode bar to the left of Back / Forward / New code. The choice is remembered betw
   items fit one row at 375px. Without it "Forward ▶" and "New code" each wrapped to two
   lines.
 
+## Tutorial link (2026-09-04)
+
+Galvin's own strategy tutorial, linked from the footer under the name line. The label and
+the destination both switch with the language: **Strategy Tutorial → YouTube** in English,
+**策略教程 → Bilibili** in Chinese, because YouTube does not open from mainland China.
+Same video on both. Stored as one `foot.tutorial` key per language so the label and the
+URL cannot drift apart.
+
 ## Verified (not assumed)
 - `node verify-all-games.js` — unchanged: total 5801, average 4.4761, worst 5,
   distribution 1/6/62/533/694. The solver was not touched.
