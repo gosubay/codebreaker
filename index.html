@@ -1025,6 +1025,142 @@ function nextLine(){
     (plan(b.g)?'<p>'+plan(b.g)+'</p>':'');
 }
 
+/* ── Move 2 after a two-and-two opening ─────────────────────────────────────
+   Eleven hand-written explanations, each in two halves.
+
+   KNOW is true after ANY two-colours-two-of-each opening. Verified over all 1,296:
+   every 22-shaped opening — AABB, ABAB, ABBA, any colours — yields exactly these
+   eleven answers with exactly these counts, so only the colour names and the slot
+   pairs change. They are substituted in from the opening actually played.
+
+   WHY describes the solver’s actual pegs. The tie sets are large (48 guesses tie
+   after 0b1w) and the solver picks a different representative under a different
+   opening — after 3344 it answers 2b0w with 1124, not the relabelled 1234 — so this
+   half is shown only after the standard opening 1122. Everything else falls back to
+   the generated line. Do not widen it without re-checking the picks. */
+const OPEN1122=7;                       /* red red orange orange */
+const NUM=function(x){return '<span class="num">'+x+'</span>';};
+function pairsOf(g){                    /* the two colours of a 22 opening, and their slots */
+  const at={},cols=[];
+  for(let p=0;p<4;p++){const x=DIG[g*4+p]; if(!at[x]){at[x]=[];cols.push(x);} at[x].push(p+1);}
+  if(cols.length!==2||at[cols[0]].length!==2) return null;
+  return {a:cols[0],b:cols[1],as:at[cols[0]],bs:at[cols[1]]};
+}
+function move2Know(k,P){
+  const A=CNAME[P.a].toLowerCase(), B=CNAME[P.b].toLowerCase(), AP=A+'s', BP=B+'s';
+  const AS='slots '+P.as[0]+' and '+P.as[1], BS='slots '+P.bs[0]+' and '+P.bs[1];
+  switch(k){
+  case '0,0': return 'Both your colours are gone completely — not one of either. Four colours left for four slots.';
+  case '0,1': return 'Exactly one peg is '+A+' or '+B+', and it is in the wrong place. If it is '+A+
+    ' it sits in one of the two slots you played '+B+' in ('+BS+'); if it is '+B+', one of the two you played '+
+    A+' in ('+AS+'). Which of the two colours it is, is a straight 128–128 coin flip.';
+  case '1,0': return 'Exactly one peg is '+A+' or '+B+', and this time it is already in the right slot — '+A+
+    ' in '+AS+', or '+B+' in '+BS+'. Which of the two colours it is, is again a 128–128 coin flip.';
+  case '0,2': return 'Exactly two pegs between '+A+' and '+B+', both in the wrong half of the board, and that is now '+
+    'permanent: '+A+' is banned from '+AS+', so it can only sit in the other two, and '+B+' likewise. Position is '+
+    'settled to a half of the board; which colours is not. Most likely one of each ('+NUM(64)+' of the 96), '+
+    'sometimes two of one ('+NUM(16)+' each way).';
+  case '1,1': return 'One peg right, one displaced — but you cannot tell which colour did which, so nothing is '+
+    'pinned. '+A[0].toUpperCase()+A.slice(1)+' could be in any of the four slots, almost evenly. The one open '+
+    'question you can attack is the count: two '+AP+', two '+BP+', or one of each — '+NUM(64)+' codes each, a dead '+
+    'three-way tie. This answer leaves more codes than any other.';
+  case '2,0': return 'Two pegs are exactly where you put them and nothing was displaced — but a black peg confirms '+
+    'without forbidding, so this tells you less than two whites would. '+A[0].toUpperCase()+A.slice(1)+' is still in '+
+    'slot '+P.as[0]+' in '+NUM(57)+' of the 114 codes, a coin flip, and usually stays in the half you played it in — '+
+    'though not always, '+NUM(9)+' codes have it elsewhere. The count is not capped either: three of one colour, and '+
+    'even four, survive this answer.';
+  case '0,3': return 'Three pegs between '+A+' and '+B+', every one of them misplaced — so each colour is confined '+
+    'to the two slots you played the other one in, and one slot is neither colour.';
+  case '1,2': return 'Three pegs between '+A+' and '+B+', one of them already in the right place. Watch the counting: '+
+    'a code with three '+AP+' and one '+B+' also reads as three here, because your opening only had two '+AP+
+    ' to count with.';
+  case '2,1': return 'Two facts hold without a single exception. Exactly one '+A+' sits in one of the two slots you '+
+    'played '+A+' in ('+AS+') — never both. Exactly one '+B+' sits in one of the two you played '+B+' in ('+BS+
+    ') — never both. Two straight either/or questions, plus a third peg you know nothing about.';
+  case '3,0': return 'Three of your four pegs are already exactly right. Precisely one slot is wrong — that is the '+
+    'whole of it, 4 slots × 5 other colours = '+NUM(20)+' codes — and the answer will not tell you which.';
+  case '2,2': return 'The colour question is closed: two '+AP+', two '+BP+', nothing else. Only the arrangement is '+
+    'unknown, and just '+NUM(4)+' codes fit.';
+  }
+  return '';
+}
+/* the peg-by-peg half — standard opening only */
+const MOVE2WHY={
+'0,0':'<p>Play yellow, yellow, green, blue: three colours tested, yellow doubled to pin down how many there are. '+
+  'Purple is left out deliberately — it reports itself through what is missing. Two pegs or fewer and purple is in '+
+  'the code '+NUM('84%')+' of the time; four pegs and purple is ruled out entirely. Nothing at all, and the code is '+
+  'four purples and you have won.</p>'+
+  '<p>Four different new colours leaves up to '+NUM(60)+' — too thin to count anything. Two pairs leaves '+NUM(56)+
+  ' — counts well, but only looks at two colours. This leaves '+NUM(46)+', the best there is.</p>',
+'0,1':'<p>Orange goes into slot 1 — one peg asking both halves of that coin flip at once: is it orange, and is it '+
+  'there? Yellow and a doubled green take the rest.</p>'+
+  '<p>Red in slot 3 is exactly as good — '+NUM(48)+' guesses tie at worst case '+NUM(44)+' and the solver takes the '+
+  'first it meets. Four fresh colours leaves '+NUM(60)+': that throws away the one thing you know.</p>',
+'1,0':'<p>Red goes back into slot 1 — not to lock it in, since you do not yet know it <em>is</em> red, but to settle '+
+  'which colour it was and which of its two slots.</p>'+
+  '<p>Orange in slot 3 is exactly as good — the same '+NUM(48)+'-way tie at worst case '+NUM(44)+'. Four fresh '+
+  'colours leaves '+NUM(60)+'.</p>',
+'0,2':'<p>Orange goes into slot 1, one of the two slots it is now confined to, and the other three pegs go on '+
+  'colours you know nothing about.</p>'+
+  '<p>You would expect the doubling trick from one black and one white to apply. It does not: doubling the orange '+
+  'leaves '+NUM(36)+' and pairing it differently leaves '+NUM(28)+', against '+NUM(18)+'. There the count is a '+
+  'genuine three-way tie; here you already know there are exactly two and where they can sit, so a second orange '+
+  'peg re-asks a question you have mostly answered.</p>',
+'1,1':'<p>Both reds go back into slots 1 and 2 to separate “one red” from “two or more”, with yellow and green '+
+  'added.</p>'+
+  '<p>Four different colours holds only one red, and a single red peg saturates — it cannot tell one red from two, '+
+  'which is exactly the open question. That costs '+NUM(6)+' in the worst case, '+NUM(44)+' against '+NUM(38)+
+  '. Dropping red and orange altogether leaves '+NUM(84)+'. This is the one branch where repeating your own opening '+
+  'pegs earns its place.</p>',
+'2,0':'<p>Red holds slot 1, where half the codes have it — that peg alone cuts the field down the middle whichever '+
+  'way it answers. Orange moves to slot 2, where only '+NUM(5)+' of the 114 could have it: it will almost certainly '+
+  'come back white, and that is the point, it asks whether orange is in the code at all rather than where. Yellow '+
+  'and green go in fresh. This is the only move on the board that uses four different colours — a poor opening, a '+
+  'good move now that the colour question is nearly closed.</p>'+
+  '<p>Swapping the two new colours for a doubled green is exactly as good, worst case '+NUM(21)+' either way; the '+
+  'solver takes this one because it comes first in its ordering. Keeping the opening and testing one slot leaves '+
+  NUM(34)+' and only six possible answers; keeping both reds leaves '+NUM(28)+'.</p>',
+'0,3':'<p>Red in slot 1 is deliberately impossible: it cannot score black, so it reports pure colour, which is the '+
+  'piece you are missing. Orange in slot 2 and red in slot 3 are the two placements that <em>can</em> score. Yellow '+
+  'probes the odd slot out.</p>'+
+  '<p>The natural move is to swap the pairs over. Do not. All '+NUM(16)+' codes give that guess the same answer, '+
+  'every time — it is the one guess here that tells you literally nothing.</p>',
+'1,2':'<p>One impossible placement to squeeze out pure colour, two placements that can score, one fresh colour for '+
+  'the odd slot — the same move as after three whites, and for the same reason. Unlike that version, this one could '+
+  'also be the code outright.</p>'+
+  '<p>Locking three pegs and testing the fourth leaves '+NUM(16)+' of the 36, nearly half the field, because that '+
+  'can only produce six different answers. This produces ten and leaves '+NUM(7)+'.</p>',
+'2,1':'<p>Every peg asks something different: red in slot 1 answers the first either/or, orange in slot 3 answers '+
+  'the second, orange in slot 2 asks whether there is a <em>second</em> orange, and yellow asks about the odd peg.</p>'+
+  '<p>Putting red in both slot 1 and slot 2 hands back one black peg every time whatever the code — you already know '+
+  'exactly one of them is red, so that is two pegs asking nothing, and it leaves '+NUM(8)+'. Red in slots 1 and 3 '+
+  'leaves '+NUM(7)+', because red is in slot 3 in only a quarter of the codes where orange is in slot 3 in exactly '+
+  'half. A peg is worth most when its answer is a coin flip.</p>',
+'3,0':'<p>Keeping the three and testing the fourth works — it even wins outright once in twenty, because it could '+
+  'be the code, which this can never be. But keeping three pegs guarantees at least two blacks back, so only five '+
+  'answers exist and every code where the wrong slot is not the fourth lands in one lump of '+NUM(8)+'. Shuffling '+
+  'instead turns wrong placements into <em>white</em> pegs, and whites separate “this colour is present” from “this '+
+  'slot is right”. Seven answers, worst lump '+NUM(5)+'.</p>'+
+  '<p>Over the twenty codes that is 4.05 guesses against 4.15, and both always finish inside five. A lottery ticket '+
+  'against a slightly better question — the solver takes the question.</p>',
+'2,2':'<p>Red, orange, red, <em>yellow</em> — a colour you know for certain is not in the code. That looks like a '+
+  'thrown-away peg and it is the opposite: play one of the four candidates instead and two of the other three answer '+
+  'identically, leaving you two codes and a fifth guess. The dead peg breaks that symmetry and splits all four '+
+  'apart, so you win on move 4.</p>'+
+  '<p>Any candidate leaves worst case '+NUM(2)+' and three possible answers. This leaves '+NUM(1)+' and gives four.</p>'
+};
+function moveTwo(){
+  const st=currentState();
+  if(st.guesses.length!==1||!ranking) return '';
+  const gu=st.guesses[0], P=pairsOf(gu.g);
+  if(!P) return '';
+  const k=FB[gu.fb].b+','+FB[gu.fb].w, know=move2Know(k,P);
+  if(!know) return '';
+  const why = gu.g===OPEN1122 ? MOVE2WHY[k] : '';
+  return '<p>'+know+'</p>'+(why||('<p>Play '+pegSpan(ranking[0].g)+' — whatever comes back, at most '+
+    NUM(ranking[0].worst)+' of the '+st.cands.length+' codes survive. So: '+shortPlan(st.cands,ranking[0].g)+'.</p>'));
+}
+
 function advise(){
   const st=currentState();
   if(st.guesses.some(function(g){return g.fb===SOLVED;})){
@@ -1050,6 +1186,8 @@ function advise(){
     setCoach('<p>Only one code fits all '+st.guesses.length+' answers. This is it: '+pegSpan(st.cands[0])+'</p>','good');
     return;
   }
+  const m2=moveTwo();
+  if(m2){ setCoach(m2+(plan(ranking[0].g)?'<p>'+plan(ranking[0].g)+'</p>':'')); return; }
   const best=ranking[0];
   if(best.inSet && best.worst===1){
     setCoach('<p><span class="num">'+st.cands.length+'</span> codes left, and any guess narrows it to one. '+
@@ -1078,8 +1216,8 @@ function gradeOpening(played,worstAt){
       ' extra codes carried into move 2.</p>';
     tone='bad';
   }
-  const la=lastAnswer();
-  setCoach(head+(la?'<p>'+la+'</p>':'')+nextLine(),tone);
+  const la=lastAnswer(), m2=moveTwo();
+  setCoach(head+(m2||((la?'<p>'+la+'</p>':'')+nextLine())),tone);
 }
 
 function grade(played,worstAt,prevRank){

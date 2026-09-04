@@ -55,6 +55,13 @@ tabs. Desktop: tabs left, buttons right, flush with the grid edge (measured 967p
 967px grid). Mobile: buttons stack directly under the tabs, both visible without scrolling.
 In analyse they now sit 400px *above* the entry grid instead of 2,000px below it.
 
+## Coach copy for move 2 (2026-09-04)
+Eleven hand-written explanations, one per answer to a two-and-two opening, each split into
+"what you now know" (fires after any 22-shaped opening, colours and slots substituted) and
+"why this move" (the peg-by-peg reasoning, standard opening `1122` only). Full table of
+figures in CLAUDE.md. Checked by dumping the coach HTML for all 13 answers under `1122`,
+`3344`, `5656` and the non-22 `1234`.
+
 ## Verified (not assumed)
 - `node verify-all-games.js` runs the **shipped** `<script>` under a DOM shim and plays
   all 1,296 games: total 5801, average 4.4761, worst 5, distribution 1/6/62/533/694.

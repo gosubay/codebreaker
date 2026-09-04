@@ -78,6 +78,45 @@ as `.a-ctrl` at the foot of the page, ~2,500px below the analyse entry grid, whi
 you actually use them. The `ctrl` area and the `.spacer` that right-aligned New code inside
 that old row are both gone — do not re-add `ctrl` to any `grid-template-areas`.
 
+## Coach copy — move 2 (added 2026-09-04)
+
+Eleven hand-written explanations, one per reachable answer to a two-and-two opening,
+each in two halves. `moveTwo()` builds them; `advise()` and `gradeOpening()` both call it.
+
+- **KNOW** is true after **any** 22-shaped opening — AABB, ABAB, ABBA, any colours.
+  Verified over all 1,296: every 22 opening yields exactly the same eleven answers with
+  exactly the same counts (256/256/96/16/256/208/36/114/32/4/20). Only the colour names
+  and slot pairs change, and `pairsOf()` substitutes them. Colour plurals use `AP`/`BP`.
+- **WHY** describes the solver's actual pegs, so it is shown **only after `1122`**
+  (index 7). The tie sets are large — 48 guesses tie after `0b1w` — and the solver picks
+  a different representative under a different opening: after `3344` it answers `2b0w`
+  with `1124`, not the relabelled `1234`. Any other opening falls back to the generated
+  line. **Do not widen this without re-checking every pick.**
+- A non-22 opening skips the whole block and uses `lastAnswer()` + `nextLine()` as before.
+
+Figures that appear in the copy, all computed here, none quoted:
+
+| answer | left | play | worst | notable |
+|---|---|---|---|---|
+| `0b0w` | 256 | `3345` | 46 | ≤2 pegs → purple present 84%; 4 pegs → purple absent, always |
+| `0b1w` | 256 | `2344` | 44 | 48 guesses tie; red-in-slot-3 equally good |
+| `1b0w` | 256 | `1344` | 44 | same 48-way tie |
+| `0b2w` | 96 | `2344` | 18 | doubling orange → 36; **`2244` needs a 6th guess in 2 of 96** |
+| `1b1w` | 208 | `1134` | 38 | `1234` → 44; all 24 best guesses keep a doubled old colour |
+| `2b0w` | 114 | `1234` | 21 | `1344` and `1243` tie exactly; `1123` → 34 |
+| `0b3w` | 16 | `1213` | 4 | **`2211` returns one answer for all 16 codes** |
+| `1b2w` | 36 | `1213` | 7 | lock-and-test → 16 |
+| `2b1w` | 32 | `1223` | 6 | every code has one red in the red pair, never both; `1123` → 8 |
+| `3b0w` | 20 | `1223` | 5 | `1124` → 8 but **still finishes in five**, 4.15 vs 4.05 average |
+| `2b2w` | 4 | `1213` | 1 | any candidate → worst 2; the dead yellow peg → worst 1 |
+
+Six of the eleven recommendations **cannot be the code**: `0b2w`, `1b1w`, `2b0w`, `0b3w`,
+`2b2w`, `3b0w`. Say so — it is the most surprising thing in the whole sequence.
+
+Galvin's rules for this copy: name what a comparison is against (never "the mirror image"
+or "the same guess"), a reader lands on one answer and never reads the others, and the
+numbers stay in.
+
 ## Coach copy — the opening (rewritten 2026-09-04)
 
 The guess-1 explanation is deliberately **not** a restatement of the algorithm. It says a
