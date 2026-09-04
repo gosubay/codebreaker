@@ -19,9 +19,10 @@
 :root{
   --board:#171C2E; --board-deep:#10141F; --panel:#1F2639; --panel-hi:#28304A;
   --rule:#333C5C; --ink:#EAECF5; --ink-dim:#8791B0; --ink-faint:#5D6684; --hot:#FF6B4A;
-  --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
-  --body:"Inter",system-ui,-apple-system,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --cjk:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC";
+  --display:"Bricolage Grotesque","Arial Black",var(--cjk),system-ui,sans-serif;
+  --body:"Inter",var(--cjk),system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,var(--cjk),monospace;
   --gbar:96px;
 }
 *{box-sizing:border-box}
@@ -194,8 +195,32 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .coach.good{border-left-color:#4FBF7F}
 .coach.bad{border-left-color:#F2A03D}
 .num{font-family:var(--mono);font-weight:700}
+
+/* English / Chinese. Same segmented shape as the mode tabs, one size down. */
+.langtoggle{display:flex;gap:3px;background:var(--board-deep);border:1px solid var(--rule);
+  border-radius:9px;padding:3px;flex:none;align-items:stretch}
+.lang{background:transparent;border:0;border-radius:6px;padding:4px 10px;
+  font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-dim);white-space:nowrap;
+  transition:background .14s,color .14s}
+.lang[aria-pressed=true]{background:var(--panel-hi);color:var(--ink);box-shadow:inset 0 0 0 1px var(--rule)}
+@media(hover:hover){.lang[aria-pressed=false]:hover{color:var(--ink)}}
+
+/* Chinese has no italic tradition and a synthesised oblique is unreadable at 13px;
+   the emphasis this copy wants is weight, not slant. */
+body[data-lang=zh] em{font-style:normal;font-weight:600;color:var(--ink)}
+body[data-lang=zh] .coach p{line-height:1.85}
+body[data-lang=zh] .tab .th,
+body[data-lang=zh] .tally .k{letter-spacing:.02em;text-transform:none}
 .controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .controls .btn{flex:1}
+/* On a phone the language toggle shares this row with Back / Forward / New code.
+   Four items in 347px only fit if the buttons give back some side padding — without
+   this, "Forward ▶" and "New code" each wrap to two lines inside their own button. */
+@media(max-width:880px){
+  .controls{gap:5px}
+  .controls .btn.sm{padding-left:6px;padding-right:6px}
+  .lang{padding:4px 8px}
+}
 
 #load{position:fixed;inset:0;background:var(--board);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:60}
 #load .lt{font-family:var(--mono);font-size:12px;color:var(--ink-dim);letter-spacing:.05em}
@@ -361,7 +386,7 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
 </style>
 
 <div id="load">
-  <div class="lt">Building the outcome table…</div>
+  <div class="lt" data-i18n="load">Building the outcome table…</div>
   <div class="track"><div class="fill" id="lf"></div></div>
 </div>
 
@@ -369,64 +394,68 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
   <header>
     <div>
       <h1>Codebreaker <em>/ minimax</em></h1>
-      <div class="sub">The board game Mastermind, and Knuth's 1977 rule that cracks any of its 1,296 codes in five guesses.</div>
+      <div class="sub" data-i18n="sub.coach">The board game Mastermind, and Knuth's 1977 rule that cracks any of its 1,296 codes in five guesses.</div>
     </div>
     <div class="tally">
-      <div><div class="n" id="tTurn">1</div><div class="k">Guess</div></div>
-      <div class="t-left"><div class="n live" id="tLeft">1296</div><div class="k">Left</div></div>
+      <div><div class="n" id="tTurn">1</div><div class="k" data-i18n="tally.guess">Guess</div></div>
+      <div class="t-left"><div class="n live" id="tLeft">1296</div><div class="k" data-i18n="tally.left">Left</div></div>
     </div>
   </header>
 
   <div class="modebar">
     <div class="tabs" role="tablist" aria-label="Mode">
-      <button class="tab" role="tab" data-mode="play" aria-selected="false">Play<span class="th">no help</span></button>
-      <button class="tab" role="tab" data-mode="coach" aria-selected="true">Coach<span class="th">shows its work</span></button>
-      <button class="tab" role="tab" data-mode="analyse" aria-selected="false">Analyse<span class="th">a real board</span></button>
+      <button class="tab" role="tab" data-mode="play" aria-selected="false"><span data-i18n="tab.play">Play</span><span class="th" data-i18n="tab.play.th">no help</span></button>
+      <button class="tab" role="tab" data-mode="coach" aria-selected="true"><span data-i18n="tab.coach">Coach</span><span class="th" data-i18n="tab.coach.th">shows its work</span></button>
+      <button class="tab" role="tab" data-mode="analyse" aria-selected="false"><span data-i18n="tab.analyse">Analyse</span><span class="th" data-i18n="tab.analyse.th">a real board</span></button>
     </div>
     <div class="controls">
-      <button class="btn sm" id="bBack">◀ Back</button>
-      <button class="btn sm" id="bFwd">Forward ▶</button>
+      <div class="langtoggle" role="group" aria-label="Language">
+        <button class="lang" data-lang="en" aria-pressed="true">EN</button>
+        <button class="lang" data-lang="zh" aria-pressed="false">中文</button>
+      </div>
+      <button class="btn sm" id="bBack" data-i18n="btn.back">◀ Back</button>
+      <button class="btn sm" id="bFwd" data-i18n="btn.fwd">Forward ▶</button>
       <button class="btn sm" id="bNew">New code</button>
     </div>
   </div>
 
   <div class="grid">
     <div class="panel a-board">
-      <div class="ttl">The board</div>
+      <div class="ttl" data-i18n="ttl.board">The board</div>
       <div class="board" id="board"></div>
       <div class="pegkey">
-        <span><i class="b"></i>in the right slot</span>
-        <span><i class="w"></i>right colour, wrong slot</span>
+        <span><i class="b"></i><span data-i18n="key.black">in the right slot</span></span>
+        <span><i class="w"></i><span data-i18n="key.white">right colour, wrong slot</span></span>
       </div>
       <div class="result" id="result"></div>
       <div class="gbar">
         <div class="picker" id="picker"></div>
-        <button class="btn go" id="bPlay" disabled>Play</button>
+        <button class="btn go" id="bPlay" data-i18n="btn.play" disabled>Play</button>
       </div>
       <div class="btnrow">
-        <button class="btn sm" id="bTake">Use suggestion</button>
-        <button class="btn sm" id="bClear">Clear</button>
+        <button class="btn sm" id="bTake" data-i18n="btn.take">Use suggestion</button>
+        <button class="btn sm" id="bClear" data-i18n="btn.clear">Clear</button>
       </div>
       <div class="btnrow" id="row3">
-        <button class="btn sm" id="bAuto">Solver plays</button>
-        <button class="btn sm" id="bPeek">Show code</button>
+        <button class="btn sm" id="bAuto" data-i18n="btn.auto">Solver plays</button>
+        <button class="btn sm" id="bPeek" data-i18n="btn.showCode">Show code</button>
       </div>
     </div>
 
     <div class="panel a-entry">
-      <div class="ttl">The answer you were given</div>
+      <div class="ttl" data-i18n="ttl.entry">The answer you were given</div>
       <p class="ecap" id="ecap"></p>
       <div class="fbgrid" id="fbgrid"></div>
     </div>
 
-    <div class="coach a-coach" id="coach"><p>Loading…</p></div>
+    <div class="coach a-coach" id="coach"><p data-i18n="loading">Loading…</p></div>
 
     <div class="panel a-field">
       <div class="fieldbar">
-        <div class="ttl" style="margin:0" id="fieldTtl">Every code still alive</div>
+        <div class="ttl" style="margin:0" id="fieldTtl" data-i18n="ttl.field">Every code still alive</div>
         <div class="legend">
-          <span><i style="background:var(--hot)"></i>largest group</span>
-          <button class="btn sm" id="bSort">Group by outcome</button>
+          <span><i style="background:var(--hot)"></i><span data-i18n="legend.max">largest group</span></span>
+          <button class="btn sm" id="bSort" data-i18n="btn.group">Group by outcome</button>
         </div>
       </div>
       <canvas id="cv"></canvas>
@@ -434,7 +463,7 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
     </div>
 
     <div class="panel a-hist">
-      <div class="ttl">What this guess would do to them</div>
+      <div class="ttl" data-i18n="ttl.hist">What this guess would do to them</div>
       <p class="hcap" id="hcap"></p>
       <div class="rows" id="rows"></div>
       <div class="bars" id="bars"></div>
@@ -446,25 +475,21 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
             <div class="pegs" id="candPegs"></div>
             <div class="rank" id="candRank"></div>
           </div>
-          <div class="worst">worst case <b id="candWorst">–</b> left</div>
+          <div class="worst"><span data-i18n="worst.pre">worst case </span><b id="candWorst">–</b><span data-i18n="worst.post"> left</span></div>
         </div>
         <input type="range" id="slider" min="0" max="1295" value="0">
         <div class="jump">
-          <button class="btn sm" id="jBest">Best</button>
-          <button class="btn sm" id="jMid">Middling</button>
-          <button class="btn sm" id="jWorst">Worst</button>
+          <button class="btn sm" id="jBest" data-i18n="jump.best">Best</button>
+          <button class="btn sm" id="jMid" data-i18n="jump.mid">Middling</button>
+          <button class="btn sm" id="jWorst" data-i18n="jump.worst">Worst</button>
         </div>
       </div>
     </div>
 
     <div class="panel a-know">
-      <div class="ttl">What you know</div>
+      <div class="ttl" data-i18n="ttl.know">What you know</div>
       <div class="pgrid" id="pgrid"></div>
-      <div class="pkey">
-        <b>Glowing dot</b> — that colour is locked to that slot.<br>
-        <b>Glowing word</b> — that colour is in the code, slot unknown.<br>
-        <b>Faded</b> — ruled out.
-      </div>
+      <div class="pkey" data-i18n-html="pkey"></div>
       <div class="facts" id="facts"></div>
     </div>
 
@@ -472,8 +497,8 @@ footer{margin-top:26px;padding-top:15px;border-top:1px solid var(--rule);
 
   <footer>
     <div class="fname">Galvin Bay 2026 &middot; <a href="https://instagram.com/heygalvinbay" target="_blank" rel="noopener">@heygalvinbay</a></div>
-    <div class="fmeta">Algorithm: Knuth, 1977 &mdash; cracks any code in five guesses</div>
-    <div class="fmeta">4 pegs &middot; 6 colours &middot; 1,296 possible codes</div>
+    <div class="fmeta" data-i18n="foot.algo">Algorithm: Knuth, 1977 &mdash; cracks any code in five guesses</div>
+    <div class="fmeta" data-i18n="foot.spec">4 pegs &middot; 6 colours &middot; 1,296 possible codes</div>
   </footer>
 </div>
 
@@ -484,7 +509,568 @@ const N=1296, CHIP_LIMIT=60;
 const PEGC =['#E8514B','#F2A03D','#F0DF5E','#4FBF7F','#4A9BE8','#B57BE8'];
 const NEONC=['#FF7A6E','#FFBC3A','#FFF56B','#3DFFA6','#5FD9FF','#D79BFF'];
 const GLOW =['255,122,110','255,188,58','255,245,107','61,255,166','95,217,255','215,155,255'];
-const CNAME=['Red','Orange','Yellow','Green','Blue','Purple'];
+const CNAMES={
+  en:['Red','Orange','Yellow','Green','Blue','Purple'],
+  zh:['红色','橙色','黄色','绿色','蓝色','紫色']
+};
+
+/* ── language ────────────────────────────────────────────────────────────────
+   Every user-facing string lives in STR, keyed the same in both languages, and is
+   read through T(key, ...args). Anything that needs a number, a colour name or a
+   run of pegs substituted in is a function, so each language keeps its own word
+   order — Chinese does not inflect for plural and does not lowercase mid-sentence,
+   so the English plural and case helpers are simply absent from the zh side rather
+   than being fed through a shared template. Nothing outside STR holds prose. */
+let lang='en';
+try{ const v=localStorage.getItem('cb-lang'); if(v==='en'||v==='zh') lang=v; }catch(e){}
+let CNAME=CNAMES[lang];
+const T=function(k){
+  const t=(STR[lang]&&STR[lang][k]!==undefined)?STR[lang][k]:STR.en[k];
+  return typeof t==='function' ? t.apply(null,Array.prototype.slice.call(arguments,1)) : t;
+};
+const zh=function(){return lang==='zh';};
+/* colour names run lowercase inside an English sentence; Chinese has no case */
+const cLow=function(c){return zh()?CNAME[c]:CNAME[c].toLowerCase();};
+const NUM=function(x){return '<span class="num">'+x+'</span>';};
+
+/* ── the peg-by-peg half of move 2, English. Standard opening 1122 only. ── */
+const M2WHY_EN={
+'0,0':'<p>Play yellow, yellow, green, blue: three colours tested, yellow doubled to pin down how many there are. '+
+  'Purple is left out deliberately — it reports itself through what is missing. Two pegs or fewer and purple is in '+
+  'the code '+NUM('84%')+' of the time; four pegs and purple is ruled out entirely. Nothing at all, and the code is '+
+  'four purples and you have won.</p>'+
+  '<p>Four different new colours leaves up to '+NUM(60)+' — too thin to count anything. Two pairs leaves '+NUM(56)+
+  ' — counts well, but only looks at two colours. This leaves '+NUM(46)+', the best there is.</p>',
+'0,1':'<p>Orange goes into slot 1 — one peg asking both halves of that coin flip at once: is it orange, and is it '+
+  'there? Yellow and a doubled green take the rest.</p>'+
+  '<p>Red in slot 3 is exactly as good — '+NUM(48)+' guesses tie at worst case '+NUM(44)+' and the solver takes the '+
+  'first it meets. Four fresh colours leaves '+NUM(60)+': that throws away the one thing you know.</p>',
+'1,0':'<p>Red goes back into slot 1 — not to lock it in, since you do not yet know it <em>is</em> red, but to settle '+
+  'which colour it was and which of its two slots.</p>'+
+  '<p>Orange in slot 3 is exactly as good — the same '+NUM(48)+'-way tie at worst case '+NUM(44)+'. Four fresh '+
+  'colours leaves '+NUM(60)+'.</p>',
+'0,2':'<p>Orange goes into slot 1, one of the two slots it is now confined to, and the other three pegs go on '+
+  'colours you know nothing about.</p>'+
+  '<p>You would expect the doubling trick from one black and one white to apply. It does not: doubling the orange '+
+  'leaves '+NUM(36)+' and pairing it differently leaves '+NUM(28)+', against '+NUM(18)+'. There the count is a '+
+  'genuine three-way tie; here you already know there are exactly two and where they can sit, so a second orange '+
+  'peg re-asks a question you have mostly answered.</p>',
+'1,1':'<p>Both reds go back into slots 1 and 2 to separate “one red” from “two or more”, with yellow and green '+
+  'added.</p>'+
+  '<p>Four different colours holds only one red, and a single red peg saturates — it cannot tell one red from two, '+
+  'which is exactly the open question. That costs '+NUM(6)+' in the worst case, '+NUM(44)+' against '+NUM(38)+
+  '. Dropping red and orange altogether leaves '+NUM(84)+'. This is the one branch where repeating your own opening '+
+  'pegs earns its place.</p>',
+'2,0':'<p>Red holds slot 1, where half the codes have it — that peg alone cuts the field down the middle whichever '+
+  'way it answers. Orange moves to slot 2, where only '+NUM(5)+' of the 114 could have it: it will almost certainly '+
+  'come back white, and that is the point, it asks whether orange is in the code at all rather than where. Yellow '+
+  'and green go in fresh. This is the only move on the board that uses four different colours — a poor opening, a '+
+  'good move now that the colour question is nearly closed.</p>'+
+  '<p>Swapping the two new colours for a doubled green is exactly as good, worst case '+NUM(21)+' either way; the '+
+  'solver takes this one because it comes first in its ordering. Keeping the opening and testing one slot leaves '+
+  NUM(34)+' and only six possible answers; keeping both reds leaves '+NUM(28)+'.</p>',
+'0,3':'<p>Red in slot 1 is deliberately impossible: it cannot score black, so it reports pure colour, which is the '+
+  'piece you are missing. Orange in slot 2 and red in slot 3 are the two placements that <em>can</em> score. Yellow '+
+  'probes the odd slot out.</p>'+
+  '<p>The natural move is to swap the pairs over. Do not. All '+NUM(16)+' codes give that guess the same answer, '+
+  'every time — it is the one guess here that tells you literally nothing.</p>',
+'1,2':'<p>One impossible placement to squeeze out pure colour, two placements that can score, one fresh colour for '+
+  'the odd slot — the same move as after three whites, and for the same reason. Unlike that version, this one could '+
+  'also be the code outright.</p>'+
+  '<p>Locking three pegs and testing the fourth leaves '+NUM(16)+' of the 36, nearly half the field, because that '+
+  'can only produce six different answers. This produces ten and leaves '+NUM(7)+'.</p>',
+'2,1':'<p>Every peg asks something different: red in slot 1 answers the first either/or, orange in slot 3 answers '+
+  'the second, orange in slot 2 asks whether there is a <em>second</em> orange, and yellow asks about the odd peg.</p>'+
+  '<p>Putting red in both slot 1 and slot 2 hands back one black peg every time whatever the code — you already know '+
+  'exactly one of them is red, so that is two pegs asking nothing, and it leaves '+NUM(8)+'. Red in slots 1 and 3 '+
+  'leaves '+NUM(7)+', because red is in slot 3 in only a quarter of the codes where orange is in slot 3 in exactly '+
+  'half. A peg is worth most when its answer is a coin flip.</p>',
+'3,0':'<p>Keeping the three and testing the fourth works — it even wins outright once in twenty, because it could '+
+  'be the code, which this can never be. But keeping three pegs guarantees at least two blacks back, so only five '+
+  'answers exist and every code where the wrong slot is not the fourth lands in one lump of '+NUM(8)+'. Shuffling '+
+  'instead turns wrong placements into <em>white</em> pegs, and whites separate “this colour is present” from “this '+
+  'slot is right”. Seven answers, worst lump '+NUM(5)+'.</p>'+
+  '<p>Over the twenty codes that is 4.05 guesses against 4.15, and both always finish inside five. A lottery ticket '+
+  'against a slightly better question — the solver takes the question.</p>',
+'2,2':'<p>Red, orange, red, <em>yellow</em> — a colour you know for certain is not in the code. That looks like a '+
+  'thrown-away peg and it is the opposite: play one of the four candidates instead and two of the other three answer '+
+  'identically, leaving you two codes and a fifth guess. The dead peg breaks that symmetry and splits all four '+
+  'apart, so you win on move 4.</p>'+
+  '<p>Any candidate leaves worst case '+NUM(2)+' and three possible answers. This leaves '+NUM(1)+' and gives four.</p>'
+};
+
+/* ── the same half in Chinese ── */
+const M2WHY_ZH={
+'0,0':'<p>出黄、黄、绿、蓝：测三种新颜色，黄色加倍是为了顺便问清它有几个。紫色是故意不测的 — 它靠“缺什么”来'+
+  '暴露自己。回来两个钉或更少，紫色在密码里的概率是 '+NUM('84%')+'；回来四个钉，紫色被完全排除。一个钉都没有，'+
+  '那密码就是四个紫，你直接赢了。</p>'+
+  '<p>四种全新的不同颜色最多留下 '+NUM(60)+' 种 — 太散，什么数量都数不出来。两对留下 '+NUM(56)+' 种 — 很会数数，'+
+  '但只看了两种颜色。这一手留下 '+NUM(46)+' 种，是能做到的最好。</p>',
+'0,1':'<p>橙色放到第 1 位 — 一个钉同时问那次抛硬币的两半：它是橙色吗？它在这里吗？剩下的位置交给黄色和'+
+  '加倍的绿色。</p>'+
+  '<p>把红色放到第 3 位一样好 — 有 '+NUM(48)+' 种猜法在最坏情况 '+NUM(44)+' 上完全打平，求解器取它排序里遇到的'+
+  '第一个。四种全新颜色留下 '+NUM(60)+' 种：那等于把你唯一知道的那件事扔掉。</p>',
+'1,0':'<p>红色放回第 1 位 — 不是为了锁定它，因为你还不知道它<em>就是</em>红色，而是为了确定那一个钉是哪种'+
+  '颜色、又在它两个位置中的哪一个。</p>'+
+  '<p>把橙色放到第 3 位一样好 — 同样是最坏情况 '+NUM(44)+' 上的 '+NUM(48)+' 路打平。四种全新颜色留下 '+NUM(60)+
+  ' 种。</p>',
+'0,2':'<p>橙色放到第 1 位 — 它现在只能待的那两位之一 — 另外三个钉全押在你一无所知的颜色上。</p>'+
+  '<p>你大概以为“一黑一白”那里的加倍技巧在这里也管用。并不：把橙色加倍留下 '+NUM(36)+' 种，换一种配对留下 '+
+  NUM(28)+' 种，而这一手是 '+NUM(18)+' 种。那边数量是真正的三方打平；这里你已经知道恰好有两个、也知道它们能待在'+
+  '哪，所以第二个橙钉是在重问一个你基本已经答完的问题。</p>',
+'1,1':'<p>两个红色放回第 1、2 位，用来把“一个红”和“两个或更多”分开，再补上黄色和绿色。</p>'+
+  '<p>四种不同颜色只带得动一个红，而单独一个红钉会饱和 — 它分不出一个红和两个红，而那恰恰是没解决的问题。'+
+  '这在最坏情况下要多付 '+NUM(6)+' 的代价，'+NUM(44)+' 对 '+NUM(38)+'。红橙全丢掉则留下 '+NUM(84)+' 种。这是整棵树上'+
+  '唯一一个“重复自己开局的钉”值得的分支。</p>',
+'2,0':'<p>红色守住第 1 位 — 一半的密码在那里有它 — 这一个钉不管答什么都能把局面从正中间切开。橙色移到第 2 位，'+
+  '114 种里只有 '+NUM(5)+' 种可能在那儿：它几乎肯定回一个白钉，而这正是目的 — 它问的是“橙色到底在不在密码里”，'+
+  '而不是“在哪一位”。黄色和绿色是全新的。这是整个序列里唯一一手用四种不同颜色的 — 作为开局很糟，但现在颜色的'+
+  '问题快关上了，它是好棋。</p>'+
+  '<p>把那两种新颜色换成加倍的绿色一样好，两边最坏情况都是 '+NUM(21)+'；求解器取这一手只因为它在排序里更靠前。'+
+  '保留开局、只测一个位置留下 '+NUM(34)+' 种，而且只有六种可能的答案；两个红都保留留下 '+NUM(28)+' 种。</p>',
+'0,3':'<p>红色放第 1 位是故意让它不可能中 — 它拿不到黑钉，所以它汇报的是纯粹的颜色信息，而那正是你缺的那一块。'+
+  '橙色放第 2 位、红色放第 3 位，是两个<em>真能</em>得分的位置。黄色去试那个落单的位置。</p>'+
+  '<p>最自然的一手是把两对对调。别这么做。全部 '+NUM(16)+' 种密码对那一手给出的答案完全相同，次次一样 — 它是'+
+  '这里唯一一个字面意义上什么都不告诉你的猜法。</p>',
+'1,2':'<p>一个不可能的位置用来榨出纯颜色信息，两个真能得分的位置，一种新颜色去填那个落单的位置 — 和“三个白钉”'+
+  '之后完全相同的一手，理由也相同。和那一版不同的是，这一手本身还可能就是密码。</p>'+
+  '<p>锁住三个钉只测第四个，36 种里会留下 '+NUM(16)+' 种，接近一半，因为那样只能产生六种不同的答案。这一手能'+
+  '产生十种，留下 '+NUM(7)+' 种。</p>',
+'2,1':'<p>每个钉问的都不一样：第 1 位的红回答第一个二选一，第 3 位的橙回答第二个，第 2 位的橙问的是有没有'+
+  '<em>第二个</em>橙，黄色则去问那个落单的钉。</p>'+
+  '<p>把红色同时放在第 1、2 位，不管密码是什么都必定还你一个黑钉 — 你已经知道它们里恰好有一个是红的，所以那是'+
+  '两个什么都不问的钉，留下 '+NUM(8)+' 种。红色放第 1、3 位留下 '+NUM(7)+' 种，因为红色出现在第 3 位的只有四分之一'+
+  '的密码，而橙色出现在第 3 位的正好是一半。一个钉的价值，在它的答案是抛硬币时最大。</p>',
+'3,0':'<p>保留那三个、只测第四个是可行的 — 它甚至有二十分之一的机会直接赢，因为它可能就是密码，而这一手永远'+
+  '不可能是。但保留三个钉必然至少还你两个黑钉，所以只存在五种答案，而所有“错的那一位不是第四位”的密码都会挤进'+
+  '同一堆 '+NUM(8)+' 种里。改成打乱，则把错位变成<em>白钉</em>，而白钉能把“这种颜色在”和“这一位对”分开。'+
+  '七种答案，最大的一堆只有 '+NUM(5)+' 种。</p>'+
+  '<p>在这二十种密码上，是平均 4.05 步对 4.15 步，而且两者都总能在五步内完成。一张彩票，对上一个稍好一点的'+
+  '问题 — 求解器选问题。</p>',
+'2,2':'<p>红、橙、红、<em>黄</em> — 最后那个是你确定不在密码里的颜色。看起来像浪费了一个钉，其实恰恰相反：'+
+  '你要是改出那四个候选之一，剩下三个里会有两个给出完全相同的答案，让你留着两种密码进第五次猜测。这个“死钉”'+
+  '打破了那种对称，把四种全部分开，所以你在第 4 步就赢。</p>'+
+  '<p>任何一个候选的最坏情况都是 '+NUM(2)+'，只给出三种可能答案。这一手最坏情况是 '+NUM(1)+'，给出四种。</p>'
+};
+
+const STR={
+en:{
+/* chrome */
+'doc.title':'Codebreaker — a Mastermind solver, and Knuth’s minimax made visible',
+'load':'Building the outcome table…',
+'loading':'Loading…',
+'tally.guess':'Guess', 'tally.left':'Left',
+'tab.play':'Play', 'tab.play.th':'no help',
+'tab.coach':'Coach', 'tab.coach.th':'shows its work',
+'tab.analyse':'Analyse', 'tab.analyse.th':'a real board',
+'sub.play':'Four pegs, six colours, 1,296 possible codes, and nobody helping you.',
+'sub.coach':'The board game Mastermind, and Knuth’s 1977 rule that cracks any of its 1,296 codes in five guesses.',
+'sub.analyse':'Playing on a real board? Key in the guesses you made and the answers you got, and the solver takes it from there.',
+'btn.back':'◀ Back', 'btn.fwd':'Forward ▶', 'btn.newCode':'New code', 'btn.startOver':'Start over',
+'btn.play':'Play', 'btn.take':'Use suggestion', 'btn.clear':'Clear',
+'btn.auto':'Solver plays', 'btn.autoStop':'Stop solver',
+'btn.showCode':'Show code', 'btn.hideCode':'Hide code',
+'btn.group':'Group by outcome', 'btn.ungroup':'Ungroup',
+'ttl.board':'The board', 'ttl.entry':'The answer you were given',
+'ttl.field':'Every code still alive',
+'ttl.fieldN':n=>'The '+n+' codes still alive',
+'ttl.hist':'What this guess would do to them', 'ttl.know':'What you know',
+'key.black':'in the right slot', 'key.white':'right colour, wrong slot',
+'legend.max':'largest group',
+'worst.pre':'worst case ', 'worst.post':' left',
+'jump.best':'Best', 'jump.mid':'Middling', 'jump.worst':'Worst',
+'rank.best':'best available',
+'rank.nth':i=>'#'+i+' of 1296',
+'pkey':'<b>Glowing dot</b> — that colour is locked to that slot.<br>'+
+       '<b>Glowing word</b> — that colour is in the code, slot unknown.<br>'+
+       '<b>Faded</b> — ruled out.',
+'foot.algo':'Algorithm: Knuth, 1977 — cracks any code in five guesses',
+'foot.spec':'4 pegs · 6 colours · 1,296 possible codes',
+
+/* histogram */
+'hcap':(n,groups,mx)=>'Sorts the '+n+' surviving codes into '+groups+' groups. Biggest holds <b>'+mx+'</b>.',
+'pinnote':(tray,s)=>'If the answer comes back as '+tray+', <b>'+s+'</b> '+(s===1?'code survives':'codes survive')+'.',
+
+/* analyse entry */
+'ecap.solved':code=>'Solved. The code is '+code+'.',
+'ecap.done':'Nine guesses is as far as the board goes. Start over to key in another game.',
+'ecap.setPegs':'Set four pegs on the board above, then pick the answer that guess was given.',
+'ecap.played':code=>'You played '+code+'. What came back?',
+'ecap.replaces':d=>' Answering here replaces the '+d+' move'+(d>1?'s':'')+' after this one.',
+'fb.label':(b,w)=>b+'b '+w+'w',
+'fb.count':n=>n+' left',
+
+/* result banner */
+'res.cracked':n=>'Cracked in <span class="num">'+n+'</span>.',
+'res.underFive':'Knuth’s rule never needs more than five.',
+'res.overFive':'Knuth’s rule would have capped it at five.',
+'res.miss':code=>'Nine guesses gone. The code was '+code+'.',
+
+/* deduction facts */
+'fact.code':ds=>'The code is '+ds.map(c=>CNAME[c]).join(', ')+'.',
+'fact.slot':(p,c)=>'Slot '+p+' is '+CNAME[c]+'.',
+'fact.present':c=>CNAME[c]+' is in the code, but not which slot.',
+'fact.gone1':c=>'No remaining code uses '+CNAME[c]+'.',
+'fact.goneN':cs=>'Ruled out: '+cs.map(c=>CNAME[c]).join(', ')+'.',
+'fact.allRep':'Every remaining code repeats a colour.',
+'fact.noneRep':'No remaining code repeats a colour.',
+'fact.nothing':'Nothing ruled out yet. Every colour can still go anywhere.',
+
+/* the short plan, dropped into a longer sentence */
+'sp.answer':'hand you the answer outright',
+'sp.rearrange':'just rearrange what you already know',
+'sp.moveKnown':'move the known colours into slots you have not tried',
+'sp.keepProbe':(held,fresh)=>'keep '+held+' and probe '+fresh,
+'sp.probe':fresh=>'probe '+fresh,
+
+/* looking ahead */
+'plan.fear':(tray,n,move,what)=>'Looking ahead: '+tray+' is the answer to fear — <span class="num">'+n+
+  '</span> left, and move '+move+' would '+what+'.',
+'plan.hope':(tray,n)=>tray+' would cut you to <span class="num">'+n+'</span>.',
+
+/* reading the answer just given */
+'lastAnswer':function(b,w,cols){
+  const t=b+w, nm=nameListOr(cols), num=x=>'<span class="num">'+x+'</span>';
+  const placed = b===0 ? 'None of them is in the right slot yet.'
+    : w===0 ? (b===1 ? 'It is already in the right slot.'
+             : b===2 ? 'Both are already in the right slot.'
+             : 'All '+num(b)+' are already in the right slot.')
+    : num(b)+' in the right slot, '+num(w)+' in the wrong one.';
+  if(t===0){
+    const none = cols.length===2
+      ? 'Neither '+cLow(cols[0])+' nor '+cLow(cols[1])
+      : 'None of '+nm;
+    return 'No pegs. '+none+' is in the code, so every slot is a colour you have not tested.';
+  }
+  if(t===4)
+    return num(4)+' pegs. Every slot is '+nm+', so the colour question is closed and only the arrangement is left. '+placed;
+  return num(t)+' peg'+(t>1?'s':'')+'. At least '+num(t)+' of the four slots '+(t===1?'holds':'hold')+
+    ' '+nm+', so at most '+num(4-t)+' hold'+((4-t)===1?'s':'')+
+    ' a colour you have not tested. '+placed;
+},
+
+/* the shape of the middlegame */
+'pos.known':(inC,out)=>(inC.length?nameList(inC)+' in the code':'')+
+  (inC.length&&out.length?', ':'')+(out.length?nameList(out)+' ruled out':''),
+'pos.settled':known=>'Every colour is settled — '+known+'.',
+'pos.almost':(known,open)=>'Almost there'+(known?': '+known:'')+', and only '+open+' still a question.',
+'pos.hunt':(known,n)=>'Still a hunt'+(known?': '+known:'')+', and '+NUM(n)+' colours still open.',
+'survivors':n=>'All '+NUM(n)+' of them:',
+
+/* the endgame */
+'cert.inSet':(code,n)=>'Whatever comes back, you will know the code — and '+code+' is one of the '+n+
+  ', so it is a free 1 in '+n+' shot at ending it here.',
+'cert.out':n=>'Whatever comes back, you will know the code. No code that could win tells all '+NUM(n)+
+  ' apart, so the solver gives up its free shot to be certain next turn rather than risk a sixth guess.',
+'guarantee':(turn,n)=>'This is guess '+NUM(turn)+' and '+NUM(n)+' codes still fit'+
+  (n<=20 ? ', so you can still win it here — a 1 in '+n+' shot' : '')+
+  '. The five-guess guarantee is spent; Knuth’s rule never reaches this position.',
+'behind':(n,turn,cap)=>NUM(n)+' codes on guess '+NUM(turn)+'. Knuth’s rule is never worse than '+NUM(cap)+
+  ' here. Open with the suggestion and take it each turn, and five guesses always covers it.',
+
+/* the recommendation itself */
+'adv.only':(answers,code)=>'Only one code fits all '+answers+' answers. This is it: '+code,
+'adv.play':(code,worst,n,what)=>'Play '+code+' — whatever comes back, at most '+NUM(worst)+' of the '+n+
+  ' codes '+(worst===1?'survives':'survive')+'. So: '+what+'.',
+'adv.couldBe':'It could still be the answer outright.',
+'adv.cannotBe':'It cannot be the answer — it just splits the field better than anything that can.',
+
+/* move 1, locked copy */
+'open.copy':code=>
+  '<p>Play '+code+' — two colours, two of each. Every guess has to chase three things at once with only four '+
+  'slots: which colours are in the code, how many of each, and where they sit. A slot spent on a new colour is a '+
+  'slot not spent pinning down a colour you’ve already asked about, so nothing does all three well. Two '+
+  'colours, twice each, is the best compromise there is — the worst answer still leaves <span class="num">256'+
+  '</span> codes alive out of 1,296.</p>'+
+  '<p>Push it either way and it costs you. Four of the same colour answers one thing perfectly — exactly how many '+
+  'reds — and nothing else, leaving as many as <span class="num">625</span>. Four different colours covers the most '+
+  'ground on <em>which</em> colours, but the reply is one pair of numbers for all four, so you can’t tell which '+
+  'colour earned what: <span class="num">312</span>.</p>'+
+  '<p>The colours themselves are irrelevant here. <span class="num">90</span> different openings are exactly this '+
+  'good — only the pattern of repeats does any work, because no colour means anything yet.</p>',
+
+/* endings */
+'solved.head':(n,code)=>'Cracked in <span class="num">'+n+'</span>. The code was '+code+'.',
+'solved.tail':'Knuth’s rule never needs more than five, and no rule can promise four.',
+'peek.code':code=>'The code is '+code+'.',
+'peek.warn':'Only you can see this. Hide it before you record.',
+
+/* grading */
+'shape.22':'two colours, two of each',
+'shape.211':'a pair and two singles',
+'shape.1111':'four different colours',
+'shape.31':'three of one colour and one other',
+'shape.4':'all four the same colour',
+'shape.other':'that shape',
+'gopen.good':(code,ties)=>code+' — two colours, two of each. Optimal, worst case <span class="num">256</span>, '+
+  'and <span class="num">'+ties+'</span> other openings tie with it exactly. The colours never mattered, only the pattern.',
+'gopen.bad':(code,shape,worstAt,extra)=>code+' — '+shape+'. Worst case <span class="num">'+worstAt+'</span>. '+
+  'Two colours, two of each caps it at <span class="num">256</span>, so that is '+extra+' extra codes carried into move 2.',
+'grade.optimal':(code,worstAt)=>code+' was optimal. Worst case <span class="num">'+worstAt+'</span>, and nothing beat it.',
+'grade.risked':(code,worstAt,best,bw)=>code+' risked leaving <span class="num">'+worstAt+'</span> codes. '+best+
+  ' would have capped it at <span class="num">'+bw+'</span>.',
+
+/* move 2 */
+'m2why':k=>M2WHY_EN[k]||'',
+'m2know':function(k,P){
+  const A=cLow(P.a), B=cLow(P.b), AP=A+'s', BP=B+'s';
+  const AS='slots '+P.as[0]+' and '+P.as[1], BS='slots '+P.bs[0]+' and '+P.bs[1];
+  const Cap=x=>x[0].toUpperCase()+x.slice(1);
+  switch(k){
+  case '0,0': return 'Both your colours are gone completely — not one of either. Four colours left for four slots.';
+  case '0,1': return 'Exactly one peg is '+A+' or '+B+', and it is in the wrong place. If it is '+A+
+    ' it sits in one of the two slots you played '+B+' in ('+BS+'); if it is '+B+', one of the two you played '+
+    A+' in ('+AS+'). Which of the two colours it is, is a straight 128–128 coin flip.';
+  case '1,0': return 'Exactly one peg is '+A+' or '+B+', and this time it is already in the right slot — '+A+
+    ' in '+AS+', or '+B+' in '+BS+'. Which of the two colours it is, is again a 128–128 coin flip.';
+  case '0,2': return 'Exactly two pegs between '+A+' and '+B+', both in the wrong half of the board, and that is now '+
+    'permanent: '+A+' is banned from '+AS+', so it can only sit in the other two, and '+B+' likewise. Position is '+
+    'settled to a half of the board; which colours is not. Most likely one of each ('+NUM(64)+' of the 96), '+
+    'sometimes two of one ('+NUM(16)+' each way).';
+  case '1,1': return 'One peg right, one displaced — but you cannot tell which colour did which, so nothing is '+
+    'pinned. '+Cap(A)+' could be in any of the four slots, almost evenly. The one open '+
+    'question you can attack is the count: two '+AP+', two '+BP+', or one of each — '+NUM(64)+' codes each, a dead '+
+    'three-way tie. This answer leaves more codes than any other.';
+  case '2,0': return 'Two pegs are exactly where you put them and nothing was displaced — but a black peg confirms '+
+    'without forbidding, so this tells you less than two whites would. '+Cap(A)+' is still in '+
+    'slot '+P.as[0]+' in '+NUM(57)+' of the 114 codes, a coin flip, and usually stays in the half you played it in — '+
+    'though not always, '+NUM(9)+' codes have it elsewhere. The count is not capped either: three of one colour, and '+
+    'even four, survive this answer.';
+  case '0,3': return 'Three pegs between '+A+' and '+B+', every one of them misplaced — so each colour is confined '+
+    'to the two slots you played the other one in, and one slot is neither colour.';
+  case '1,2': return 'Three pegs between '+A+' and '+B+', one of them already in the right place. Watch the counting: '+
+    'a code with three '+AP+' and one '+B+' also reads as three here, because your opening only had two '+AP+
+    ' to count with.';
+  case '2,1': return 'Two facts hold without a single exception. Exactly one '+A+' sits in one of the two slots you '+
+    'played '+A+' in ('+AS+') — never both. Exactly one '+B+' sits in one of the two you played '+B+' in ('+BS+
+    ') — never both. Two straight either/or questions, plus a third peg you know nothing about.';
+  case '3,0': return 'Three of your four pegs are already exactly right. Precisely one slot is wrong — that is the '+
+    'whole of it, 4 slots × 5 other colours = '+NUM(20)+' codes — and the answer will not tell you which.';
+  case '2,2': return 'The colour question is closed: two '+AP+', two '+BP+', nothing else. Only the arrangement is '+
+    'unknown, and just '+NUM(4)+' codes fit.';
+  }
+  return '';
+}
+},
+
+zh:{
+/* chrome */
+'doc.title':'Codebreaker — Mastermind 求解器，让高德纳的极小极大算法看得见',
+'load':'正在构建结果表…',
+'loading':'加载中…',
+'tally.guess':'猜测', 'tally.left':'剩余',
+'tab.play':'对局', 'tab.play.th':'无提示',
+'tab.coach':'教练', 'tab.coach.th':'讲解思路',
+'tab.analyse':'分析', 'tab.analyse.th':'真实棋盘',
+'sub.play':'四个钉、六种颜色、1,296 种可能的密码，没有人帮你。',
+'sub.coach':'桌游 Mastermind（珠玑妙算），以及高德纳 1977 年那条能在五步内破解其全部 1,296 种密码的规则。',
+'sub.analyse':'在真实棋盘上玩？把你猜过的组合和得到的答案输进来，接下来交给求解器。',
+'btn.back':'◀ 上一步', 'btn.fwd':'下一步 ▶', 'btn.newCode':'换个密码', 'btn.startOver':'重新开始',
+'btn.play':'出手', 'btn.take':'采用建议', 'btn.clear':'清空',
+'btn.auto':'求解器代打', 'btn.autoStop':'停止求解器',
+'btn.showCode':'显示密码', 'btn.hideCode':'隐藏密码',
+'btn.group':'按结果分组', 'btn.ungroup':'取消分组',
+'ttl.board':'棋盘', 'ttl.entry':'你得到的答案',
+'ttl.field':'所有还活着的密码',
+'ttl.fieldN':n=>'还活着的 '+n+' 种密码',
+'ttl.hist':'这一猜会把它们分成什么样', 'ttl.know':'你已经知道的',
+'key.black':'颜色和位置都对', 'key.white':'颜色对，位置不对',
+'legend.max':'最大的一组',
+'worst.pre':'最坏情况剩 ', 'worst.post':' 种',
+'jump.best':'最佳', 'jump.mid':'中等', 'jump.worst':'最差',
+'rank.best':'当前最佳',
+'rank.nth':i=>'第 '+i+' / 1296',
+'pkey':'<b>发光的圆点</b> — 该颜色锁定在该位置。<br>'+
+       '<b>发光的颜色名</b> — 该颜色在密码里，但不知道在哪一位。<br>'+
+       '<b>暗淡</b> — 已排除。',
+'foot.algo':'算法：高德纳（Knuth），1977 — 五步内破解任意密码',
+'foot.spec':'4 个钉 · 6 种颜色 · 1,296 种可能的密码',
+
+/* histogram */
+'hcap':(n,groups,mx)=>'把剩下的 '+n+' 种密码分成 '+groups+' 组，最大的一组有 <b>'+mx+'</b> 种。',
+'pinnote':(tray,s)=>'如果答案回来是 '+tray+'，就还剩 <b>'+s+'</b> 种密码。',
+
+/* analyse entry */
+'ecap.solved':code=>'破解了。密码是 '+code+'。',
+'ecap.done':'棋盘最多只到九次猜测。重新开始，再输入另一局。',
+'ecap.setPegs':'先在上面的棋盘摆好四个钉，再选出这一猜得到的答案。',
+'ecap.played':code=>'你猜了 '+code+'。回来的是什么？',
+'ecap.replaces':d=>'在这里作答，会替换掉它之后的 '+d+' 步。',
+'fb.label':(b,w)=>b+'黑 '+w+'白',
+'fb.count':n=>'剩 '+n+' 种',
+
+/* result banner */
+'res.cracked':n=>'<span class="num">'+n+'</span> 步破解。',
+'res.underFive':'高德纳的规则从来不需要超过五步。',
+'res.overFive':'高德纳的规则本可以把它压在五步以内。',
+'res.miss':code=>'九次机会用完了。密码是 '+code+'。',
+
+/* deduction facts */
+'fact.code':ds=>'密码是 '+ds.map(c=>CNAME[c]).join('、')+'。',
+'fact.slot':(p,c)=>'第 '+p+' 位是'+CNAME[c]+'。',
+'fact.present':c=>CNAME[c]+'在密码里，但不知道在哪一位。',
+'fact.gone1':c=>'剩下的密码都不含'+CNAME[c]+'。',
+'fact.goneN':cs=>'已排除：'+cs.map(c=>CNAME[c]).join('、')+'。',
+'fact.allRep':'剩下的每一种密码都有重复颜色。',
+'fact.noneRep':'剩下的密码都没有重复颜色。',
+'fact.nothing':'还什么都没排除。每种颜色都还能出现在任何位置。',
+
+/* the short plan, dropped into a longer sentence */
+'sp.answer':'直接把答案交给你',
+'sp.rearrange':'只是把你已经知道的重新排列',
+'sp.moveKnown':'把已知的颜色挪到你还没试过的位置',
+'sp.keepProbe':(held,fresh)=>'保留'+held+'，试探'+fresh,
+'sp.probe':fresh=>'试探'+fresh,
+
+/* looking ahead */
+'plan.fear':(tray,n,move,what)=>'往前看：'+tray+' 是最该怕的答案 — 还剩 <span class="num">'+n+
+  '</span> 种，而第 '+move+' 步就得'+what+'。',
+'plan.hope':(tray,n)=>tray+' 则会把你压到 <span class="num">'+n+'</span> 种。',
+
+/* reading the answer just given */
+'lastAnswer':function(b,w,cols){
+  const t=b+w, nm=nameListOr(cols), num=x=>'<span class="num">'+x+'</span>';
+  const placed = b===0 ? '但没有一个在正确的位置上。'
+    : w===0 ? (b===1 ? '而且它已经在正确的位置上。'
+             : b===2 ? '而且两个都已经在正确的位置上。'
+             : '而且 '+num(b)+' 个全都已经在正确的位置上。')
+    : num(b)+' 个位置也对，'+num(w)+' 个位置不对。';
+  if(t===0)
+    return '一个钉都没有。'+nameList(cols)+'都不在密码里，所以每一位都是你还没测过的颜色。';
+  if(t===4)
+    return num(4)+' 个钉。每一位都是'+nm+'，颜色的问题已经关上，只剩排列。'+placed;
+  return num(t)+' 个钉。四个位置里至少有 '+num(t)+' 个是'+nm+'，所以最多只有 '+num(4-t)+
+    ' 个是你还没测过的颜色。'+placed;
+},
+
+/* the shape of the middlegame */
+'pos.known':(inC,out)=>(inC.length?nameList(inC)+'在密码里':'')+
+  (inC.length&&out.length?'，':'')+(out.length?nameList(out)+'已排除':''),
+'pos.settled':known=>'每种颜色都已经定了 — '+known+'。',
+'pos.almost':(known,open)=>'快到了'+(known?'：'+known:'')+'，只剩'+open+'还是问题。',
+'pos.hunt':(known,n)=>'还在找'+(known?'：'+known:'')+'，还有 '+NUM(n)+' 种颜色没定。',
+'survivors':n=>'全部 '+NUM(n)+' 种就是：',
+
+/* the endgame */
+'cert.inSet':(code,n)=>'不管回来什么，你都会知道密码 — 而且 '+code+' 本身就在这 '+n+
+  ' 种里面，所以这是一次免费的 '+n+' 分之一机会，可能当场结束。',
+'cert.out':n=>'不管回来什么，你都会知道密码。没有任何一个可能获胜的密码能把这 '+NUM(n)+
+  ' 种全部区分开，所以求解器宁可放弃这次免费机会，换下一步的确定，也不冒打到第六步的险。',
+'guarantee':(turn,n)=>'这是第 '+NUM(turn)+' 次猜测，还有 '+NUM(n)+' 种密码符合'+
+  (n<=20 ? '，所以你仍然可能在这里赢下来 — '+n+' 分之一的机会' : '')+
+  '。五步保证已经用完了；高德纳的规则永远走不到这个局面。',
+'behind':(n,turn,cap)=>'第 '+NUM(turn)+' 次猜测还剩 '+NUM(n)+' 种密码。高德纳的规则在这里最多也只有 '+
+  NUM(cap)+' 种。开局就用建议，之后每一步都照着走，五次猜测总是够的。',
+
+/* the recommendation itself */
+'adv.only':(answers,code)=>'只有一种密码同时符合这 '+answers+' 个答案。就是它：'+code,
+'adv.play':(code,worst,n,what)=>'出 '+code+' — 不管回来什么，这 '+n+' 种密码里最多只有 '+NUM(worst)+
+  ' 种能活下来。也就是说：'+what+'。',
+'adv.couldBe':'它本身也可能就是密码。',
+'adv.cannotBe':'它不可能是密码 — 它只是比任何可能是密码的猜法都更能把局面切开。',
+
+/* move 1, locked copy */
+'open.copy':code=>
+  '<p>出 '+code+' — 两种颜色，各两个。每一次猜测都要用四个位置同时追三件事：密码里有哪些颜色、每种有几个、'+
+  '它们分别在哪一位。一个位置拿去试新颜色，就不能拿去确认你已经问过的颜色，所以没有哪种猜法能把三件事都做好。'+
+  '两种颜色、各两个，是能找到的最好折中 — 最坏的答案也只会让 1,296 种里还剩 <span class="num">256</span> 种。</p>'+
+  '<p>往哪一边推都要付代价。四个同色能把一件事问得极其清楚 — 到底有几个红 — 但别的什么都问不到，最多会留下 '+
+  '<span class="num">625</span> 种。四种不同颜色在<em>有哪些颜色</em>上覆盖面最广，但回来的只是针对全部四个'+
+  '位置的一对数字，你分不出哪个颜色挣到了哪个钉：<span class="num">312</span> 种。</p>'+
+  '<p>这里颜色本身无关紧要。有 <span class="num">90</span> 种不同的开局和这一手一样好 — 只有重复的形状在'+
+  '起作用，因为现在还没有哪种颜色具有任何意义。</p>',
+
+/* endings */
+'solved.head':(n,code)=>'<span class="num">'+n+'</span> 步破解。密码是 '+code+'。',
+'solved.tail':'高德纳的规则从来不需要超过五步，而且没有任何规则能保证四步。',
+'peek.code':code=>'密码是 '+code+'。',
+'peek.warn':'只有你能看到。录制前请先把它隐藏起来。',
+
+/* grading */
+'shape.22':'两种颜色，各两个',
+'shape.211':'一对，加两个单色',
+'shape.1111':'四种不同颜色',
+'shape.31':'三个同色，加一个别的',
+'shape.4':'四个全是同一种颜色',
+'shape.other':'这种形状',
+'gopen.good':(code,ties)=>code+' — 两种颜色，各两个。最优解，最坏情况 <span class="num">256</span> 种，'+
+  '另有 <span class="num">'+ties+'</span> 种开局与它完全打平。颜色从来不重要，重要的只有形状。',
+'gopen.bad':(code,shape,worstAt,extra)=>code+' — '+shape+'。最坏情况 <span class="num">'+worstAt+'</span> 种。'+
+  '两种颜色各两个能把它压到 <span class="num">256</span> 种，也就是多带了 '+extra+' 种密码进入第二步。',
+'grade.optimal':(code,worstAt)=>code+' 是最优解。最坏情况 <span class="num">'+worstAt+'</span> 种，没有更好的了。',
+'grade.risked':(code,worstAt,best,bw)=>code+' 有可能留下 <span class="num">'+worstAt+'</span> 种密码。'+best+
+  ' 本可以把它压到 <span class="num">'+bw+'</span> 种。',
+
+/* move 2 */
+'m2why':k=>M2WHY_ZH[k]||'',
+'m2know':function(k,P){
+  const A=CNAME[P.a], B=CNAME[P.b];
+  const AS='第 '+P.as[0]+'、'+P.as[1]+' 位', BS='第 '+P.bs[0]+'、'+P.bs[1]+' 位';
+  switch(k){
+  case '0,0': return '你用的两种颜色全军覆没 — 一个都没有。剩下四种颜色，填四个位置。';
+  case '0,1': return '恰好有一个钉是'+A+'或'+B+'，而且位置错了。如果它是'+A+'，它就在你摆'+B+'的那两位（'+BS+
+    '）之一；如果它是'+B+'，就在你摆'+A+'的那两位（'+AS+'）之一。它究竟是哪种颜色，是干净的 128–128 抛硬币。';
+  case '1,0': return '恰好有一个钉是'+A+'或'+B+'，而这次它已经在正确的位置上 — '+A+'在'+AS+'，或者'+B+'在'+BS+
+    '。它究竟是哪种颜色，同样是 128–128 的抛硬币。';
+  case '0,2': return A+'和'+B+'加起来恰好两个钉，两个都在棋盘错误的那一半，而且这已经定死了：'+A+'不可能出现在'+
+    AS+'，只能待在另外两位，'+B+'同理。位置已经确定到棋盘的哪一半，颜色还没有。最可能是一样一个（96 种里有 '+
+    NUM(64)+' 种），有时是同一种两个（每边各 '+NUM(16)+' 种）。';
+  case '1,1': return '一个位置对，一个错位 — 但你分不出是哪种颜色做了哪件事，所以什么都钉不住。'+A+
+    '可能在四个位置的任何一个，概率几乎相同。你唯一能攻的问题是数量：两个'+A+'、两个'+B+'，还是一样一个 — '+
+    '各 '+NUM(64)+' 种，三方完全打平。这个答案留下的密码比任何其他答案都多。';
+  case '2,0': return '有两个钉正好在你摆的位置上，而且没有任何错位的 — 但黑钉只确认、不禁止，所以它给你的'+
+    '信息比两个白钉还少。114 种密码里有 '+NUM(57)+' 种'+A+'仍然在第 '+P.as[0]+' 位，是个抛硬币，而且它通常'+
+    '还留在你摆它的那一半 — 但不总是，有 '+NUM(9)+' 种密码把它放在别处。数量也没有被限死：某种颜色出现三个、'+
+    '甚至四个，都能在这个答案下活下来。';
+  case '0,3': return A+'和'+B+'加起来三个钉，每一个都放错了位置 — 所以每种颜色都被关进你摆另一种颜色的那两位'+
+    '里，还有一位两种颜色都不是。';
+  case '1,2': return A+'和'+B+'加起来三个钉，其中一个已经在正确的位置上。注意这里的计数方式：三个'+A+'加一个'+
+    B+'的密码在这里也读作三个，因为你的开局只有两个'+A+'可以拿来数。';
+  case '2,1': return '有两个事实毫无例外地成立。你摆'+A+'的那两位（'+AS+'）里恰好有一个'+A+' — 绝不会是两个。'+
+    '你摆'+B+'的那两位（'+BS+'）里恰好有一个'+B+' — 也绝不会是两个。两个干脆的二选一，外加一个你一无所知的'+
+    '第三个钉。';
+  case '3,0': return '你四个钉里有三个已经完全正确。恰好有一位是错的 — 全部可能就这么多，4 个位置 × 5 种其他'+
+    '颜色 = '+NUM(20)+' 种密码 — 而这个答案不会告诉你是哪一位。';
+  case '2,2': return '颜色的问题已经关上：两个'+A+'、两个'+B+'，没有别的。只剩排列不知道，符合的只有 '+NUM(4)+
+    ' 种密码。';
+  }
+  return '';
+}
+}
+};
+
+/* ── applying a language ──────────────────────────────────────────────────── */
+function applyStatic(){
+  const t=document.querySelectorAll('[data-i18n]');
+  for(let i=0;i<t.length;i++) t[i].textContent=T(t[i].getAttribute('data-i18n'));
+  const h=document.querySelectorAll('[data-i18n-html]');
+  for(let i=0;i<h.length;i++) h[i].innerHTML=T(h[i].getAttribute('data-i18n-html'));
+  const ls=document.querySelectorAll('.lang');
+  for(let i=0;i<ls.length;i++) ls[i].setAttribute('aria-pressed',String(ls[i].dataset.lang===lang));
+  document.title=T('doc.title');
+  if(document.documentElement) document.documentElement.lang = lang==='zh'?'zh-Hans':'en';
+  document.body.setAttribute('data-lang',lang);
+}
+/* labels that carry a state the static pass would flatten back to their off position */
+function syncButtons(){
+  document.getElementById('bAuto').textContent=T(auto?'btn.autoStop':'btn.auto');
+  document.getElementById('bPeek').textContent=T(peek?'btn.hideCode':'btn.showCode');
+  document.getElementById('bSort').textContent=T(grouped?'btn.ungroup':'btn.group');
+}
+function setLang(l){
+  if(l===lang) return;
+  lang=l; CNAME=CNAMES[l];
+  try{ localStorage.setItem('cb-lang',l); }catch(e){}
+  applyStatic();
+  if(!states.length) return;
+  syncModeChrome(); syncButtons();
+  refresh(true);
+  /* the peek panel is not regenerated by refresh, and advise() would overwrite it */
+  if(peek&&mode==='coach') setCoach('<p>'+T('peek.code',pegSpan(secret))+'</p><p>'+T('peek.warn')+'</p>');
+  else reAdvise();
+}
+applyStatic();
+
 
 const MQ=matchMedia('(max-width:880px)');
 let narrow=MQ.matches;
@@ -582,18 +1168,18 @@ function renderFacts(A,cands){
   const box=document.getElementById('facts'); box.innerHTML='';
   const lines=[];
   if(A.n===1){
-    lines.push(['The code is '+digits(cands[0]).map(function(c){return CNAME[c];}).join(', ')+'.',true]);
+    lines.push([T('fact.code',digits(cands[0])),true]);
   }else{
-    for(let p=0;p<4;p++) for(let c=0;c<6;c++) if(A.sure[c][p]) lines.push(['Slot '+(p+1)+' is '+CNAME[c]+'.',true]);
+    for(let p=0;p<4;p++) for(let c=0;c<6;c++) if(A.sure[c][p]) lines.push([T('fact.slot',p+1,c),true]);
     for(let c=0;c<6;c++) if(A.present[c]&&!A.sure[c].some(Boolean))
-      lines.push([CNAME[c]+' is in the code, but not which slot.',true]);
-    const gone=[]; for(let c=0;c<6;c++) if(A.absent[c]) gone.push(CNAME[c]);
-    if(gone.length===1) lines.push(['No remaining code uses '+gone[0]+'.',false]);
-    else if(gone.length>1) lines.push(['Ruled out: '+gone.join(', ')+'.',false]);
-    if(A.allRep) lines.push(['Every remaining code repeats a colour.',false]);
-    if(A.noneRep) lines.push(['No remaining code repeats a colour.',false]);
+      lines.push([T('fact.present',c),true]);
+    const gone=[]; for(let c=0;c<6;c++) if(A.absent[c]) gone.push(c);
+    if(gone.length===1) lines.push([T('fact.gone1',gone[0]),false]);
+    else if(gone.length>1) lines.push([T('fact.goneN',gone),false]);
+    if(A.allRep) lines.push([T('fact.allRep'),false]);
+    if(A.noneRep) lines.push([T('fact.noneRep'),false]);
   }
-  if(!lines.length) lines.push(['Nothing ruled out yet. Every colour can still go anywhere.',false]);
+  if(!lines.length) lines.push([T('fact.nothing'),false]);
   lines.slice(0,4).forEach(function(x){ box.appendChild(el('div','fact'+(x[1]?' key':''),x[0])); });
 }
 
@@ -621,11 +1207,7 @@ const activeBucket=function(){return pinBucket>=0?pinBucket:hoverBucket;};
              coach: everything, the app knows the code
              analyse: everything, you type the answers, there is no code */
 const SNAP={};
-const SUBTITLE={
-  play:'Four pegs, six colours, 1,296 possible codes, and nobody helping you.',
-  coach:'The board game Mastermind, and Knuth’s 1977 rule that cracks any of its 1,296 codes in five guesses.',
-  analyse:'Playing on a real board? Key in the guesses you made and the answers you got, and the solver takes it from there.'
-};
+/* subtitles live in STR under sub.play / sub.coach / sub.analyse */
 function snapshot(){
   return {secret:secret,states:states,cursor:cursor,draft:draft.slice(),selSlot:selSlot,
     ranking:ranking,scrubIdx:scrubIdx,pinBucket:pinBucket,grouped:grouped,peek:peek,dots:dots};
@@ -637,12 +1219,12 @@ function restore(s){
 }
 function stopAuto(){
   auto=false; clearTimeout(autoTimer);
-  const b=document.getElementById('bAuto'); b.classList.remove('on'); b.textContent='Solver plays';
+  const b=document.getElementById('bAuto'); b.classList.remove('on'); b.textContent=T('btn.auto');
 }
 function reAdvise(){ if(mode==='play') renderResult(); else advise(); }
 function syncModeChrome(){
-  document.getElementById('bNew').textContent = mode==='analyse' ? 'Start over' : 'New code';
-  document.querySelector('.sub').textContent = SUBTITLE[mode];
+  document.getElementById('bNew').textContent = T(mode==='analyse'?'btn.startOver':'btn.newCode');
+  document.querySelector('.sub').textContent = T('sub.'+mode);
   document.body.setAttribute('data-mode',mode);
   const tabs=document.querySelectorAll('.tab');
   for(let i=0;i<tabs.length;i++) tabs[i].setAttribute('aria-selected',String(tabs[i].dataset.mode===mode));
@@ -659,7 +1241,7 @@ function newGame(){
   states=[{cands:all,guesses:[]}]; cursor=0; peek=false; pinBucket=-1; hoverBucket=-1; grouped=false;
   secret = mode==='analyse' ? -1 : (Math.random()*N)|0;
   stopAuto();
-  const bp=document.getElementById('bPeek'); bp.classList.remove('on'); bp.textContent='Show code';
+  const bp=document.getElementById('bPeek'); bp.classList.remove('on'); bp.textContent=T('btn.showCode');
   draft=[null,null,null,null]; selSlot=0; dots=new Map();
   refresh(true); reAdvise();
 }
@@ -712,7 +1294,7 @@ function syncPlay(){
 }
 function syncSortBtn(){
   const bs=document.getElementById('bSort');
-  bs.classList.toggle('on',grouped); bs.textContent=grouped?'Ungroup':'Group by outcome';
+  bs.classList.toggle('on',grouped); bs.textContent=T(grouped?'btn.ungroup':'btn.group');
 }
 function draftChanged(){ renderBoard(); syncPlay(); if(mode==='analyse') renderEntry(); }
 
@@ -727,18 +1309,17 @@ function renderEntry(){
   const g=ready?(draft[0]*216+draft[1]*36+draft[2]*6+draft[3]):-1;
   const bk=ready?bucketsFor(g,st.cands):null;
   document.getElementById('ecap').innerHTML = solved
-    ? 'Solved. The code is '+pegSpan(st.cands[0])+'.'
-    : done ? 'Nine guesses is as far as the board goes. Start over to key in another game.'
-    : !ready ? 'Set four pegs on the board above, then pick the answer that guess was given.'
-    : 'You played '+pegSpan(g)+'. What came back?'+
-      (live?'':' Answering here replaces the '+drop+' move'+(drop>1?'s':'')+' after this one.');
+    ? T('ecap.solved',pegSpan(st.cands[0]))
+    : done ? T('ecap.done')
+    : !ready ? T('ecap.setPegs')
+    : T('ecap.played',pegSpan(g))+(live?'':T('ecap.replaces',drop));
   for(let i=0;i<NB;i++){
     const n=ready?bk[i].length:0;
     const b=document.createElement('button');
     b.className='fbo'; b.disabled=!ready||n===0;
     b.appendChild(fbIcons(i));
-    b.appendChild(el('span','ftxt',FB[i].b+'b '+FB[i].w+'w'));
-    b.appendChild(el('span','cnt',ready?(n+' left'):'–'));
+    b.appendChild(el('span','ftxt',T('fb.label',FB[i].b,FB[i].w)));
+    b.appendChild(el('span','cnt',ready?T('fb.count',n):'–'));
     b.onclick=(function(ii){return function(){playGuess(g,ii);};})(i);
     box.appendChild(b);
   }
@@ -747,11 +1328,10 @@ function renderResult(){
   const r=document.getElementById('result'), st=currentState(), n=st.guesses.length;
   if(n&&st.guesses[n-1].fb===SOLVED){
     r.className='result show';
-    r.innerHTML='Cracked in <span class="num">'+n+'</span>. '+
-      (n<=5 ? 'Knuth’s rule never needs more than five.' : 'Knuth’s rule would have capped it at five.');
+    r.innerHTML=T('res.cracked',n)+' '+T(n<=5?'res.underFive':'res.overFive');
   }else if(n>=9){
     r.className='result show miss';
-    r.innerHTML='Nine guesses gone. The code was '+pegSpan(secret)+'.';
+    r.innerHTML=T('res.miss',pegSpan(secret));
   }else r.className='result';
 }
 
@@ -794,16 +1374,14 @@ function renderBars(){
   }
   const cp=document.getElementById('candPegs'); cp.innerHTML='';
   digits(S.g).forEach(function(c){cp.appendChild(pegEl(c));});
-  document.getElementById('candRank').textContent = scrubIdx===0?'best available':'#'+(scrubIdx+1)+' of 1296';
+  document.getElementById('candRank').textContent = scrubIdx===0?T('rank.best'):T('rank.nth',scrubIdx+1);
   document.getElementById('candWorst').textContent=S.mx;
-  document.getElementById('hcap').innerHTML =
-    'Sorts the '+currentState().cands.length+' surviving codes into '+S.nonzero+' groups. Biggest holds <b>'+S.mx+'</b>.';
+  document.getElementById('hcap').innerHTML = T('hcap',currentState().cands.length,S.nonzero,S.mx);
   const pn=document.getElementById('pinnote');
   if(pinBucket>=0){
     const s=S.sizes[pinBucket];
     pn.className='pinnote show';
-    pn.innerHTML='If the answer comes back as '+fbIcons(pinBucket,'il').outerHTML+', <b>'+s+'</b> '+
-      (s===1?'code survives':'codes survive')+'.';
+    pn.innerHTML=T('pinnote',fbIcons(pinBucket,'il').outerHTML,s);
   } else pn.className='pinnote';
 }
 
@@ -922,26 +1500,20 @@ function shapeOf(g){
   const c={}; for(let p=0;p<4;p++){const x=DIG[g*4+p]; c[x]=(c[x]||0)+1;}
   return Object.keys(c).map(function(k){return c[k];}).sort(function(a,b){return b-a;}).join('');
 }
-const OPENSHAPE={
-  '22':  {n:90,  name:'two colours, two of each'},
-  '211': {n:720, name:'a pair and two singles'},
-  '1111':{n:360, name:'four different colours'},
-  '31':  {n:120, name:'three of one colour and one other'},
-  '4':   {n:6,   name:'all four the same colour'}
-};
+/* how many openings share each shape; the names of the shapes live in STR */
+const OPENSHAPE={'22':{n:90},'211':{n:720},'1111':{n:360},'31':{n:120},'4':{n:6}};
 
-function nameListOr(arr){
-  const n=arr.map(function(c){return CNAME[c].toLowerCase();});
+/* English serialises with commas and a final and/or; Chinese uses the enumeration
+   comma and the same final conjunction, with no space before it. */
+function joinNames(arr,conj){
+  const n=arr.map(cLow);
   if(n.length===1) return n[0];
-  if(n.length===2) return n[0]+' or '+n[1];
-  return n.slice(0,-1).join(', ')+' or '+n[n.length-1];
+  if(zh()) return n.length===2 ? n[0]+conj+n[1] : n.slice(0,-1).join('、')+conj+n[n.length-1];
+  return n.length===2 ? n[0]+' '+conj+' '+n[1]
+                      : n.slice(0,-1).join(', ')+' '+conj+' '+n[n.length-1];
 }
-function nameList(arr){
-  const n=arr.map(function(c){return CNAME[c].toLowerCase();});
-  if(n.length===1) return n[0];
-  if(n.length===2) return n[0]+' and '+n[1];
-  return n.slice(0,-1).join(', ')+' and '+n[n.length-1];
-}
+function nameListOr(arr){ return joinNames(arr,zh()?'或':'or'); }
+function nameList(arr){ return joinNames(arr,zh()?'和':'and'); }
 function bestOf(cands){
   const counts=new Int32Array(NB), inSet=new Uint8Array(N);
   for(let k=0;k<cands.length;k++) inSet[cands[k]]=1;
@@ -955,7 +1527,7 @@ function bestOf(cands){
   return {g:bg,worst:bw};
 }
 function shortPlan(cands,gg){
-  if(cands.length===1) return 'hand you the answer outright';
+  if(cands.length===1) return T('sp.answer');
   const A=analyze(cands), B=(gg===undefined?bestOf(cands):{g:gg});
   const gc=[], seen={};
   for(let p=0;p<4;p++){const x=DIG[B.g*4+p]; if(!seen[x]){seen[x]=1;gc.push(x);}}
@@ -963,10 +1535,10 @@ function shortPlan(cands,gg){
   for(let c=0;c<6;c++){ if(!A.absent[c]){ A.present[c]?conf.push(c):open.push(c); } }
   const inArr=function(a){return function(x){return a.indexOf(x)>=0;};};
   const fresh=gc.filter(inArr(open)), held=gc.filter(inArr(conf));
-  if(!open.length)  return 'just rearrange what you already know';
-  if(!fresh.length) return 'move the known colours into slots you have not tried';
-  if(held.length)   return 'keep '+nameList(held)+' and probe '+nameList(fresh);
-  return 'probe '+nameList(fresh);
+  if(!open.length)  return T('sp.rearrange');
+  if(!fresh.length) return T('sp.moveKnown');
+  if(held.length)   return T('sp.keepProbe',nameList(held),nameList(fresh));
+  return T('sp.probe',nameList(fresh));
 }
 function plan(g){
   const st=currentState();
@@ -979,10 +1551,8 @@ function plan(g){
     if(si<0||bk[i].length<bk[si].length) si=i;
   }
   if(wi<0) return '';
-  let t='Looking ahead: '+fbIcons(wi,'il').outerHTML+' is the answer to fear \u2014 <span class="num">'+
-    bk[wi].length+'</span> left, and move '+(st.guesses.length+2)+' would '+shortPlan(bk[wi])+'.';
-  if(si>=0&&si!==wi)
-    t+=' '+fbIcons(si,'il').outerHTML+' would cut you to <span class="num">'+bk[si].length+'</span>.';
+  let t=T('plan.fear',fbIcons(wi,'il').outerHTML,bk[wi].length,st.guesses.length+2,shortPlan(bk[wi]));
+  if(si>=0&&si!==wi) t+=' '+T('plan.hope',fbIcons(si,'il').outerHTML,bk[si].length);
   return t;
 }
 
@@ -990,30 +1560,9 @@ function lastAnswer(){
   const st=currentState();
   if(!st.guesses.length) return '';
   const gu=st.guesses[st.guesses.length-1];
-  const b=FB[gu.fb].b, w=FB[gu.fb].w, t=b+w;
   const cols=[], seen={};
   for(let p=0;p<4;p++){const x=DIG[gu.g*4+p]; if(!seen[x]){seen[x]=1;cols.push(x);}}
-  const nm=nameListOr(cols);
-  const num=function(x){return '<span class="num">'+x+'</span>';};
-  function placed(){
-    if(b===0) return 'None of them is in the right slot yet.';
-    if(w===0) return b===1 ? 'It is already in the right slot.'
-            : b===2 ? 'Both are already in the right slot.'
-            : 'All '+num(b)+' are already in the right slot.';
-    return num(b)+' in the right slot, '+num(w)+' in the wrong one.';
-  }
-  if(t===0){
-    const none = cols.length===2
-      ? 'Neither '+CNAME[cols[0]].toLowerCase()+' nor '+CNAME[cols[1]].toLowerCase()
-      : 'None of '+nm;
-    return 'No pegs. '+none+' is in the code, so every slot is a colour you have not tested.';
-  }
-  if(t===4){
-    return num(4)+' pegs. Every slot is '+nm+', so the colour question is closed and only the arrangement is left. '+placed();
-  }
-  return num(t)+' peg'+(t>1?'s':'')+'. At least '+num(t)+' of the four slots '+(t===1?'holds':'hold')+
-    ' '+nm+', so at most '+num(4-t)+' hold'+((4-t)===1?'s':'')+
-    ' a colour you have not tested. '+placed();
+  return T('lastAnswer',FB[gu.fb].b,FB[gu.fb].w,cols);
 }
 
 /* ── The middlegame and the endgame ─────────────────────────────────────────
@@ -1035,14 +1584,10 @@ function positionNote(cands){
   const toldAlready=gu&&FB[gu.fb].b+FB[gu.fb].w===4;
   const A=analyze(cands), inC=[], out=[], open=[];
   for(let c=0;c<6;c++){ if(A.present[c]) inC.push(c); else if(A.absent[c]) out.push(c); else open.push(c); }
-  const known=(inC.length?nameList(inC)+' in the code':'')+
-              (inC.length&&out.length?', ':'')+
-              (out.length?nameList(out)+' ruled out':'');
-  if(!open.length)
-    return toldAlready?'':'Every colour is settled — '+known+'.';
-  if(open.length<=2)
-    return 'Almost there'+(known?': '+known:'')+', and only '+nameListOr(open)+' still a question.';
-  return 'Still a hunt'+(known?': '+known:'')+', and '+NUM(open.length)+' colours still open.';
+  const known=T('pos.known',inC,out);
+  if(!open.length) return toldAlready?'':T('pos.settled',known);
+  if(open.length<=2) return T('pos.almost',known,nameListOr(open));
+  return T('pos.hunt',known,open.length);
 }
 
 /* few enough to see the whole remaining world at once */
@@ -1050,40 +1595,33 @@ function survivorList(cands){
   if(cands.length<2||cands.length>5) return '';
   let s='';
   for(let i=0;i<cands.length;i++) s+=pegSpan(cands[i]);
-  return '<p>All '+NUM(cands.length)+' of them: <span class="cands">'+s+'</span></p>';
+  return '<p>'+T('survivors',cands.length)+' <span class="cands">'+s+'</span></p>';
 }
 
 /* worst case 1: the answer is forced next turn whatever comes back */
 function certaintyNote(cands,best){
   if(best.worst!==1||cands.length<2) return '';
-  return best.inSet
-    ? 'Whatever comes back, you will know the code — and '+pegSpan(best.g)+' is one of the '+cands.length+
-      ', so it is a free 1 in '+cands.length+' shot at ending it here.'
-    : 'Whatever comes back, you will know the code. No code that could win tells all '+NUM(cands.length)+
-      ' apart, so the solver gives up its free shot to be certain next turn rather than risk a sixth guess.';
+  return best.inSet ? T('cert.inSet',pegSpan(best.g),cands.length) : T('cert.out',cands.length);
 }
 
 /* past the five-guess promise: say so plainly, once it is actually true */
 function guaranteeNote(cands,n){
   if(n<4||cands.length<2) return '';
-  return '<p>This is guess '+NUM(n+1)+' and '+NUM(cands.length)+' codes still fit'+
-    (cands.length<=20 ? ', so you can still win it here — a 1 in '+cands.length+' shot' : '')+
-    '. The five-guess guarantee is spent; Knuth’s rule never reaches this position.</p>';
+  return '<p>'+T('guarantee',n+1,cands.length)+'</p>';
 }
 
 /* a position the solver's own line never occupies */
 function behindNote(cands,n){
   const cap=n<SOLVERCAP.length?SOLVERCAP[n]:1;
   if(cands.length<=cap) return '';
-  return '<p>'+NUM(cands.length)+' codes on guess '+NUM(n+1)+'. Knuth’s rule is never worse than '+NUM(cap)+
-    ' here. Open with the suggestion and take it each turn, and five guesses always covers it.</p>';
+  return '<p>'+T('behind',cands.length,n+1,cap)+'</p>';
 }
 
 /* the body every path shares, so grading and rewinding say the same thing */
 function adviceBody(){
   const st=currentState(), best=ranking[0];
   if(st.cands.length===1)
-    return '<p>Only one code fits all '+st.guesses.length+' answers. This is it: '+pegSpan(st.cands[0])+'</p>';
+    return '<p>'+T('adv.only',st.guesses.length,pegSpan(st.cands[0]))+'</p>';
   const cert=certaintyNote(st.cands,best);
   const gn=guaranteeNote(st.cands,st.guesses.length);
   const bn=gn?'':behindNote(st.cands,st.guesses.length);
@@ -1091,10 +1629,8 @@ function adviceBody(){
   const pos=positionNote(st.cands);
   return (pos?'<p>'+pos+'</p>':'')+
     survivorList(st.cands)+
-    '<p>Play '+pegSpan(best.g)+' — whatever comes back, at most '+NUM(best.worst)+' of the '+st.cands.length+
-      ' codes '+(best.worst===1?'survives':'survive')+'. So: '+shortPlan(st.cands,best.g)+'.</p>'+
-    '<p>'+(cert||(best.inSet?'It could still be the answer outright.'
-      :'It cannot be the answer — it just splits the field better than anything that can.'))+'</p>'+
+    '<p>'+T('adv.play',pegSpan(best.g),best.worst,st.cands.length,shortPlan(st.cands,best.g))+'</p>'+
+    '<p>'+(cert||T(best.inSet?'adv.couldBe':'adv.cannotBe'))+'</p>'+
     gn+bn+(look?'<p>'+look+'</p>':'');
 }
 
@@ -1114,151 +1650,37 @@ function nextLine(){ return adviceBody(); }
    half is shown only after the standard opening 1122. Everything else falls back to
    the generated line. Do not widen it without re-checking the picks. */
 const OPEN1122=7;                       /* red red orange orange */
-const NUM=function(x){return '<span class="num">'+x+'</span>';};
 function pairsOf(g){                    /* the two colours of a 22 opening, and their slots */
   const at={},cols=[];
   for(let p=0;p<4;p++){const x=DIG[g*4+p]; if(!at[x]){at[x]=[];cols.push(x);} at[x].push(p+1);}
   if(cols.length!==2||at[cols[0]].length!==2) return null;
   return {a:cols[0],b:cols[1],as:at[cols[0]],bs:at[cols[1]]};
 }
-function move2Know(k,P){
-  const A=CNAME[P.a].toLowerCase(), B=CNAME[P.b].toLowerCase(), AP=A+'s', BP=B+'s';
-  const AS='slots '+P.as[0]+' and '+P.as[1], BS='slots '+P.bs[0]+' and '+P.bs[1];
-  switch(k){
-  case '0,0': return 'Both your colours are gone completely — not one of either. Four colours left for four slots.';
-  case '0,1': return 'Exactly one peg is '+A+' or '+B+', and it is in the wrong place. If it is '+A+
-    ' it sits in one of the two slots you played '+B+' in ('+BS+'); if it is '+B+', one of the two you played '+
-    A+' in ('+AS+'). Which of the two colours it is, is a straight 128–128 coin flip.';
-  case '1,0': return 'Exactly one peg is '+A+' or '+B+', and this time it is already in the right slot — '+A+
-    ' in '+AS+', or '+B+' in '+BS+'. Which of the two colours it is, is again a 128–128 coin flip.';
-  case '0,2': return 'Exactly two pegs between '+A+' and '+B+', both in the wrong half of the board, and that is now '+
-    'permanent: '+A+' is banned from '+AS+', so it can only sit in the other two, and '+B+' likewise. Position is '+
-    'settled to a half of the board; which colours is not. Most likely one of each ('+NUM(64)+' of the 96), '+
-    'sometimes two of one ('+NUM(16)+' each way).';
-  case '1,1': return 'One peg right, one displaced — but you cannot tell which colour did which, so nothing is '+
-    'pinned. '+A[0].toUpperCase()+A.slice(1)+' could be in any of the four slots, almost evenly. The one open '+
-    'question you can attack is the count: two '+AP+', two '+BP+', or one of each — '+NUM(64)+' codes each, a dead '+
-    'three-way tie. This answer leaves more codes than any other.';
-  case '2,0': return 'Two pegs are exactly where you put them and nothing was displaced — but a black peg confirms '+
-    'without forbidding, so this tells you less than two whites would. '+A[0].toUpperCase()+A.slice(1)+' is still in '+
-    'slot '+P.as[0]+' in '+NUM(57)+' of the 114 codes, a coin flip, and usually stays in the half you played it in — '+
-    'though not always, '+NUM(9)+' codes have it elsewhere. The count is not capped either: three of one colour, and '+
-    'even four, survive this answer.';
-  case '0,3': return 'Three pegs between '+A+' and '+B+', every one of them misplaced — so each colour is confined '+
-    'to the two slots you played the other one in, and one slot is neither colour.';
-  case '1,2': return 'Three pegs between '+A+' and '+B+', one of them already in the right place. Watch the counting: '+
-    'a code with three '+AP+' and one '+B+' also reads as three here, because your opening only had two '+AP+
-    ' to count with.';
-  case '2,1': return 'Two facts hold without a single exception. Exactly one '+A+' sits in one of the two slots you '+
-    'played '+A+' in ('+AS+') — never both. Exactly one '+B+' sits in one of the two you played '+B+' in ('+BS+
-    ') — never both. Two straight either/or questions, plus a third peg you know nothing about.';
-  case '3,0': return 'Three of your four pegs are already exactly right. Precisely one slot is wrong — that is the '+
-    'whole of it, 4 slots × 5 other colours = '+NUM(20)+' codes — and the answer will not tell you which.';
-  case '2,2': return 'The colour question is closed: two '+AP+', two '+BP+', nothing else. Only the arrangement is '+
-    'unknown, and just '+NUM(4)+' codes fit.';
-  }
-  return '';
-}
-/* the peg-by-peg half — standard opening only */
-const MOVE2WHY={
-'0,0':'<p>Play yellow, yellow, green, blue: three colours tested, yellow doubled to pin down how many there are. '+
-  'Purple is left out deliberately — it reports itself through what is missing. Two pegs or fewer and purple is in '+
-  'the code '+NUM('84%')+' of the time; four pegs and purple is ruled out entirely. Nothing at all, and the code is '+
-  'four purples and you have won.</p>'+
-  '<p>Four different new colours leaves up to '+NUM(60)+' — too thin to count anything. Two pairs leaves '+NUM(56)+
-  ' — counts well, but only looks at two colours. This leaves '+NUM(46)+', the best there is.</p>',
-'0,1':'<p>Orange goes into slot 1 — one peg asking both halves of that coin flip at once: is it orange, and is it '+
-  'there? Yellow and a doubled green take the rest.</p>'+
-  '<p>Red in slot 3 is exactly as good — '+NUM(48)+' guesses tie at worst case '+NUM(44)+' and the solver takes the '+
-  'first it meets. Four fresh colours leaves '+NUM(60)+': that throws away the one thing you know.</p>',
-'1,0':'<p>Red goes back into slot 1 — not to lock it in, since you do not yet know it <em>is</em> red, but to settle '+
-  'which colour it was and which of its two slots.</p>'+
-  '<p>Orange in slot 3 is exactly as good — the same '+NUM(48)+'-way tie at worst case '+NUM(44)+'. Four fresh '+
-  'colours leaves '+NUM(60)+'.</p>',
-'0,2':'<p>Orange goes into slot 1, one of the two slots it is now confined to, and the other three pegs go on '+
-  'colours you know nothing about.</p>'+
-  '<p>You would expect the doubling trick from one black and one white to apply. It does not: doubling the orange '+
-  'leaves '+NUM(36)+' and pairing it differently leaves '+NUM(28)+', against '+NUM(18)+'. There the count is a '+
-  'genuine three-way tie; here you already know there are exactly two and where they can sit, so a second orange '+
-  'peg re-asks a question you have mostly answered.</p>',
-'1,1':'<p>Both reds go back into slots 1 and 2 to separate “one red” from “two or more”, with yellow and green '+
-  'added.</p>'+
-  '<p>Four different colours holds only one red, and a single red peg saturates — it cannot tell one red from two, '+
-  'which is exactly the open question. That costs '+NUM(6)+' in the worst case, '+NUM(44)+' against '+NUM(38)+
-  '. Dropping red and orange altogether leaves '+NUM(84)+'. This is the one branch where repeating your own opening '+
-  'pegs earns its place.</p>',
-'2,0':'<p>Red holds slot 1, where half the codes have it — that peg alone cuts the field down the middle whichever '+
-  'way it answers. Orange moves to slot 2, where only '+NUM(5)+' of the 114 could have it: it will almost certainly '+
-  'come back white, and that is the point, it asks whether orange is in the code at all rather than where. Yellow '+
-  'and green go in fresh. This is the only move on the board that uses four different colours — a poor opening, a '+
-  'good move now that the colour question is nearly closed.</p>'+
-  '<p>Swapping the two new colours for a doubled green is exactly as good, worst case '+NUM(21)+' either way; the '+
-  'solver takes this one because it comes first in its ordering. Keeping the opening and testing one slot leaves '+
-  NUM(34)+' and only six possible answers; keeping both reds leaves '+NUM(28)+'.</p>',
-'0,3':'<p>Red in slot 1 is deliberately impossible: it cannot score black, so it reports pure colour, which is the '+
-  'piece you are missing. Orange in slot 2 and red in slot 3 are the two placements that <em>can</em> score. Yellow '+
-  'probes the odd slot out.</p>'+
-  '<p>The natural move is to swap the pairs over. Do not. All '+NUM(16)+' codes give that guess the same answer, '+
-  'every time — it is the one guess here that tells you literally nothing.</p>',
-'1,2':'<p>One impossible placement to squeeze out pure colour, two placements that can score, one fresh colour for '+
-  'the odd slot — the same move as after three whites, and for the same reason. Unlike that version, this one could '+
-  'also be the code outright.</p>'+
-  '<p>Locking three pegs and testing the fourth leaves '+NUM(16)+' of the 36, nearly half the field, because that '+
-  'can only produce six different answers. This produces ten and leaves '+NUM(7)+'.</p>',
-'2,1':'<p>Every peg asks something different: red in slot 1 answers the first either/or, orange in slot 3 answers '+
-  'the second, orange in slot 2 asks whether there is a <em>second</em> orange, and yellow asks about the odd peg.</p>'+
-  '<p>Putting red in both slot 1 and slot 2 hands back one black peg every time whatever the code — you already know '+
-  'exactly one of them is red, so that is two pegs asking nothing, and it leaves '+NUM(8)+'. Red in slots 1 and 3 '+
-  'leaves '+NUM(7)+', because red is in slot 3 in only a quarter of the codes where orange is in slot 3 in exactly '+
-  'half. A peg is worth most when its answer is a coin flip.</p>',
-'3,0':'<p>Keeping the three and testing the fourth works — it even wins outright once in twenty, because it could '+
-  'be the code, which this can never be. But keeping three pegs guarantees at least two blacks back, so only five '+
-  'answers exist and every code where the wrong slot is not the fourth lands in one lump of '+NUM(8)+'. Shuffling '+
-  'instead turns wrong placements into <em>white</em> pegs, and whites separate “this colour is present” from “this '+
-  'slot is right”. Seven answers, worst lump '+NUM(5)+'.</p>'+
-  '<p>Over the twenty codes that is 4.05 guesses against 4.15, and both always finish inside five. A lottery ticket '+
-  'against a slightly better question — the solver takes the question.</p>',
-'2,2':'<p>Red, orange, red, <em>yellow</em> — a colour you know for certain is not in the code. That looks like a '+
-  'thrown-away peg and it is the opposite: play one of the four candidates instead and two of the other three answer '+
-  'identically, leaving you two codes and a fifth guess. The dead peg breaks that symmetry and splits all four '+
-  'apart, so you win on move 4.</p>'+
-  '<p>Any candidate leaves worst case '+NUM(2)+' and three possible answers. This leaves '+NUM(1)+' and gives four.</p>'
-};
+/* Both halves — what you now know, and why this move — are hand-written per language
+   and live in STR under m2know (a function of the answer and the opening's two colours)
+   and m2why (keyed by the answer, standard opening 1122 only). */
 function moveTwo(){
   const st=currentState();
   if(st.guesses.length!==1||!ranking) return '';
   const gu=st.guesses[0], P=pairsOf(gu.g);
   if(!P) return '';
-  const k=FB[gu.fb].b+','+FB[gu.fb].w, know=move2Know(k,P);
+  const k=FB[gu.fb].b+','+FB[gu.fb].w, know=T('m2know',k,P);
   if(!know) return '';
-  const why = gu.g===OPEN1122 ? MOVE2WHY[k] : '';
-  return '<p>'+know+'</p>'+(why||('<p>Play '+pegSpan(ranking[0].g)+' — whatever comes back, at most '+
-    NUM(ranking[0].worst)+' of the '+st.cands.length+' codes survive. So: '+shortPlan(st.cands,ranking[0].g)+'.</p>'));
+  const why = gu.g===OPEN1122 ? T('m2why',k) : '';
+  return '<p>'+know+'</p>'+(why||('<p>'+
+    T('adv.play',pegSpan(ranking[0].g),ranking[0].worst,st.cands.length,shortPlan(st.cands,ranking[0].g))+'</p>'));
 }
 
 function advise(){
   const st=currentState();
   if(st.guesses.some(function(g){return g.fb===SOLVED;})){
-    setCoach('<p>Cracked in <span class="num">'+st.guesses.length+'</span>. The code was '+pegSpan(st.cands[0])+'.</p>'+
-      '<p>Knuth\u2019s rule never needs more than five, and no rule can promise four.</p>','good');
+    setCoach('<p>'+T('solved.head',st.guesses.length,pegSpan(st.cands[0]))+'</p>'+
+             '<p>'+T('solved.tail')+'</p>','good');
     return;
   }
-  if(st.guesses.length===0){
-    setCoach('<p>Play '+pegSpan(ranking[0].g)+' \u2014 two colours, two of each. Every guess has to chase three things '+
-      'at once with only four slots: which colours are in the code, how many of each, and where they sit. A slot spent on '+
-      'a new colour is a slot not spent pinning down a colour you\u2019ve already asked about, so nothing does all three '+
-      'well. Two colours, twice each, is the best compromise there is \u2014 the worst answer still leaves '+
-      '<span class="num">256</span> codes alive out of 1,296.</p>'+
-      '<p>Push it either way and it costs you. Four of the same colour answers one thing perfectly \u2014 exactly how '+
-      'many reds \u2014 and nothing else, leaving as many as <span class="num">625</span>. Four different colours covers '+
-      'the most ground on <em>which</em> colours, but the reply is one pair of numbers for all four, so you can\u2019t '+
-      'tell which colour earned what: <span class="num">312</span>.</p>'+
-      '<p>The colours themselves are irrelevant here. <span class="num">90</span> different openings are exactly this '+
-      'good \u2014 only the pattern of repeats does any work, because no colour means anything yet.</p>');
-    return;
-  }
+  if(st.guesses.length===0){ setCoach(T('open.copy',pegSpan(ranking[0].g))); return; }
   if(st.cands.length===1){
-    setCoach('<p>Only one code fits all '+st.guesses.length+' answers. This is it: '+pegSpan(st.cands[0])+'</p>','good');
+    setCoach('<p>'+T('adv.only',st.guesses.length,pegSpan(st.cands[0]))+'</p>','good');
     return;
   }
   const m2=moveTwo();
@@ -1268,17 +1690,13 @@ function advise(){
 }
 
 function gradeOpening(played,worstAt){
-  const sh=shapeOf(played), info=OPENSHAPE[sh]||{n:0,name:'that shape'};
+  const sh=shapeOf(played), info=OPENSHAPE[sh]||{n:0};
   let head,tone;
   if(sh==='22'){
-    head='<p>'+pegSpan(played)+' \u2014 two colours, two of each. Optimal, worst case <span class="num">256</span>, '+
-      'and <span class="num">'+(info.n-1)+'</span> other openings tie with it exactly. The colours never mattered, only the pattern.</p>';
-    tone='good';
+    head='<p>'+T('gopen.good',pegSpan(played),info.n-1)+'</p>'; tone='good';
   }else{
-    head='<p>'+pegSpan(played)+' \u2014 '+info.name+'. Worst case <span class="num">'+worstAt+'</span>. '+
-      'Two colours, two of each caps it at <span class="num">256</span>, so that is '+(worstAt-256)+
-      ' extra codes carried into move 2.</p>';
-    tone='bad';
+    const nm=T('shape.'+sh)||T('shape.other');
+    head='<p>'+T('gopen.bad',pegSpan(played),nm,worstAt,worstAt-256)+'</p>'; tone='bad';
   }
   const la=lastAnswer(), m2=moveTwo();
   setCoach(head+(m2||((la?'<p>'+la+'</p>':'')+nextLine())),tone);
@@ -1289,8 +1707,8 @@ function grade(played,worstAt,prevRank){
   if(st.guesses.length===1){ gradeOpening(played,worstAt); return; }
   const best=prevRank[0], ok=worstAt===best.worst;
   const head = ok
-    ? '<p>'+pegSpan(played)+' was optimal. Worst case <span class="num">'+worstAt+'</span>, and nothing beat it.</p>'
-    : '<p>'+pegSpan(played)+' risked leaving <span class="num">'+worstAt+'</span> codes. '+pegSpan(best.g)+' would have capped it at <span class="num">'+best.worst+'</span>.</p>';
+    ? '<p>'+T('grade.optimal',pegSpan(played),worstAt)+'</p>'
+    : '<p>'+T('grade.risked',pegSpan(played),worstAt,pegSpan(best.g),best.worst)+'</p>';
   const la=lastAnswer();
   setCoach(head+(la?'<p>'+la+'</p>':'')+nextLine(), ok?'good':'bad');
 }
@@ -1322,7 +1740,7 @@ function refresh(instant){
   const sl=document.getElementById('slider');
   sl.max=Math.max(0,ranking.length-1); sl.value=0; sl.disabled=ranking.length<2;
   document.getElementById('fieldTtl').textContent =
-    chipMode() ? 'The '+st.cands.length+' codes still alive' : 'Every code still alive';
+    chipMode() ? T('ttl.fieldN',st.cands.length) : T('ttl.field');
   const A=analyze(st.cands); ANALYSIS=A;
   renderPencil(A); renderFacts(A,st.cands);
   renderBoard(); renderBars(); reflow(instant); syncPlay(); syncSortBtn();
@@ -1347,14 +1765,14 @@ document.getElementById('bClear').onclick=function(){draft=[null,null,null,null]
 document.getElementById('bTake').onclick=function(){if(!ranking)return;draft=digits(ranking[0].g);selSlot=0;draftChanged();};
 document.getElementById('bSort').onclick=function(e){
   grouped=!grouped; e.target.classList.toggle('on',grouped);
-  e.target.textContent=grouped?'Ungroup':'Group by outcome';
+  e.target.textContent=T(grouped?'btn.ungroup':'btn.group');
   reflow(false);
 };
 document.getElementById('bPeek').onclick=function(e){
   if(mode!=='coach') return;
   peek=!peek; e.target.classList.toggle('on',peek);
-  e.target.textContent=peek?'Hide code':'Show code';
-  if(peek) setCoach('<p>The code is '+pegSpan(secret)+'.</p><p>Only you can see this. Hide it before you record.</p>');
+  e.target.textContent=T(peek?'btn.hideCode':'btn.showCode');
+  if(peek) setCoach('<p>'+T('peek.code',pegSpan(secret))+'</p><p>'+T('peek.warn')+'</p>');
   else advise();
 };
 document.getElementById('bNew').onclick=newGame;
@@ -1365,12 +1783,17 @@ document.getElementById('bFwd').onclick=function(){ if(cursor<states.length-1){c
   for(let i=0;i<tabs.length;i++)
     tabs[i].onclick=(function(m){return function(){setMode(m);};})(tabs[i].dataset.mode);
 })();
+(function(){
+  const ls=document.querySelectorAll('.lang');
+  for(let i=0;i<ls.length;i++)
+    ls[i].onclick=(function(l){return function(){setLang(l);};})(ls[i].dataset.lang);
+})();
 
 let autoTimer=null;
 document.getElementById('bAuto').onclick=function(e){
   if(mode!=='coach') return;
   auto=!auto; e.target.classList.toggle('on',auto);
-  e.target.textContent=auto?'Stop solver':'Solver plays';
+  e.target.textContent=T(auto?'btn.autoStop':'btn.auto');
   if(auto) step(); else clearTimeout(autoTimer);
 };
 function step(){

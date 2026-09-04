@@ -9,8 +9,9 @@ Author: Galvin Bay, @heygalvinbay
 
 ## Architecture
 
-**One file: `index.html`.** No build, no dependencies, no backend. ~56KB.
-(`verify-all-games.js` is a dev-only Node harness — it is never loaded by the page.)
+**One file: `index.html`.** No build, no dependencies, no backend. ~102KB, English and
+Chinese both included. (`verify-all-games.js` and `verify-i18n.js` are dev-only Node
+harnesses — neither is ever loaded by the page.)
 Only external references are Google Fonts (falls back cleanly), the icon files, and `og.png`.
 
 Key pieces, in order in the `<script>`:
@@ -25,7 +26,8 @@ Key pieces, in order in the `<script>`:
   the five-guess guarantee is lost.
 - `bestOf(cands)` — same thing without the full sort, for lookahead
 - `analyze(cands)` — derives possible/sure/present/absent per colour, plus repeat facts
-- `lastAnswer()` / `shortPlan()` / `plan()` — the coach's generated prose
+- `STR` / `T(key,...)` — every user-facing string, English and Chinese. See "Two languages"
+- `lastAnswer()` / `shortPlan()` / `plan()` — the coach's generated prose, formatted via `T`
 - Field renders as canvas dots above 60 candidates, DOM chips at or below
 
 ## Three modes (added 2026-09-03)
@@ -257,6 +259,56 @@ instead of explaining it. The shape is:
 Do not reintroduce the "piles" or "biggest bucket" wording into move 1. The mechanism is
 allowed to appear later, once the reader has a reason to care.
 
+## Two languages (added 2026-09-04)
+
+English and Chinese, toggled by the `EN / 中文` segmented control in the mode bar. The
+choice is saved to `localStorage['cb-lang']` and read back on load, wrapped in try/catch
+because Safari private mode throws on the accessor.
+
+**Every user-facing string lives in `STR`, keyed identically in both languages.** Nothing
+outside `STR` holds prose. Read it through `T(key, ...args)`; anything needing a number,
+a colour name or a run of pegs substituted in is a function, so each language keeps its
+own word order. Do not add a bare English string anywhere else — `verify-i18n.js` will
+not catch what it cannot see.
+
+- `STR[lang][k]` falls back to `STR.en[k]`, so a missing Chinese key renders in English
+  and looks like nothing is wrong. The key-parity check exists for exactly this.
+- Static markup carries `data-i18n="key"` (textContent) or `data-i18n-html="key"`.
+  `applyStatic()` runs both, sets `document.title`, `<html lang>` and `body[data-lang]`.
+  It is called once at parse time, before the table build, so the loading screen and the
+  subtitle are already in the right language on first paint.
+- **Buttons whose label carries state are not driven by `applyStatic`** — it would flatten
+  "Stop solver" back to "Solver plays". `syncButtons()` re-applies `bAuto`, `bPeek` and
+  `bSort` after every static pass. `bNew` is handled by `syncModeChrome()` because its
+  label depends on the mode, not the language.
+- `setLang()` re-runs the render rather than reloading, so switching mid-game keeps the
+  board, the cursor and all three parked games. The peek panel is special-cased: `advise()`
+  would overwrite the revealed code, so it is regenerated instead.
+- `CNAME` is a `let` swapped by `setLang`. `cLow(c)` lowercases for running English prose
+  and returns the name unchanged in Chinese.
+- `nameList` / `nameListOr` join through `joinNames`: English serialises with commas and a
+  final and/or, Chinese uses `、` with no spaces around the conjunction.
+
+### Chinese-specific rules
+
+- **A space between Latin numerals and Han characters**, on both sides — `还剩 46 种`, not
+  `还剩46种`. Not after full-width punctuation (`，46`, not `， 46`). This is enforced by a
+  scan over rendered output; `M2WHY_ZH` was written without it and had 46 sites fixed.
+- `body[data-lang=zh] em` is normal weight-600 upright, not italic. A synthesised oblique
+  on Han characters is unreadable at 13px. Chinese coach paragraphs also run at
+  `line-height:1.85`.
+- The CJK font stack is system-only (`--cjk`), appended to all three font variables.
+  Loading a webfont for Chinese means megabytes; this file has no build step and no budget
+  for it.
+- Chinese has no plural and no verb agreement, so the English `(n===1?'survives':'survive')`
+  helpers simply do not appear on the zh side. Do not template them across languages.
+- Terms fixed for consistency: 密码 code · 钉 peg · 位 slot · 求解器 solver ·
+  高德纳 Knuth · 最坏情况 worst case. Proper nouns stay Latin: Codebreaker, Mastermind
+  (glossed 珠玑妙算 once, in the coach subtitle), Knuth (glossed once, in the footer).
+- The move-1 copy, the eleven move-2 explanations and every computed figure carry over
+  unchanged. **The numbers are the same in both languages** — they are computed, not
+  quoted, and a translation that rounds one is a bug.
+
 ## Testing
 
 There is no test framework. Verification is done with throwaway Node scripts that reimplement
@@ -269,6 +321,13 @@ The cheapest version: run the shipped `<script>` under a ~40-line DOM shim in `n
 table build), append a line exporting the internals onto `globalThis`, then play all 1,296.
 That tests the file that ships rather than a copy of it. Expect exactly:
 total 5801, average 4.4761, worst 5, distribution 1/6/62/533/694.
+
+`verify-i18n.js` runs the same shipped script and checks the translation: key parity
+between the two tables, then 608 generated strings swept in both languages — move 1, all
+eleven answers to 1122 / 3344 / 5656, non-22 openings, the solver's own line for a spread
+of secrets, a stubborn player deep into guarantee territory, both result banners, and every
+key rendered with plausible arguments. It fails on `undefined`, on Latin words surviving
+into Chinese prose, and on Chinese leaking into English. Run it after touching any copy.
 
 Analyse mode gives a second, free check: the candidate counts it shows for each answer
 must match `solver-decision-table.md` — e.g. after 1122 the options read

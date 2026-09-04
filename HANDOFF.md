@@ -70,26 +70,65 @@ Eleven hand-written explanations, one per answer to a two-and-two opening, each 
 figures in CLAUDE.md. Checked by dumping the coach HTML for all 13 answers under `1122`,
 `3344`, `5656` and the non-22 `1234`.
 
+## English / 中文 (2026-09-04)
+
+The whole page is now bilingual, toggled by an `EN / 中文` segmented control sitting in the
+mode bar to the left of Back / Forward / New code. The choice is remembered between visits.
+
+- **Every string moved into one table, `STR`**, keyed identically in both languages and read
+  through `T(key, ...args)`. Nothing outside `STR` holds prose any more. Chrome, buttons,
+  panel titles, the deduction facts, the entry grid, both result banners, and all of the
+  coach copy — move 1, the eleven move-2 explanations in both halves, the middlegame and
+  endgame notes, the grading lines.
+- **Switching is a re-render, not a reload.** The board, the cursor and all three parked
+  games survive it, mid-game, in every mode.
+- Numbers are untouched. Every computed figure reads the same in both languages, because
+  they are computed and not quoted.
+- Chinese-specific work: system CJK font stack (no webfont — that would be megabytes on a
+  file with no build step), `em` rendered as weight rather than a synthesised italic,
+  looser line-height on coach paragraphs, and a space between Latin numerals and Han
+  characters everywhere. Full rules in CLAUDE.md.
+- The mobile control row was tightened (5px gap, 6px button padding under 880px) so four
+  items fit one row at 375px. Without it "Forward ▶" and "New code" each wrapped to two
+  lines.
+
 ## Verified (not assumed)
-- `node verify-all-games.js` runs the **shipped** `<script>` under a DOM shim and plays
-  all 1,296 games: total 5801, average 4.4761, worst 5, distribution 1/6/62/533/694.
-  Unchanged from before the tabs went in.
-- Analyse's candidate counts cross-checked against `solver-decision-table.md`:
-  after 1122 → 0b0w 256, 0b2w 96, 1b1w 208, 2b0w 114, 3b0w 20, 1b3w disabled.
-  After 1b0w the suggestion is 1344, matching the table.
-- Browser: all three tabs at 1024px and at 375px. Play solved in 5 and in 8 (both banner
-  wordings), and stopped correctly at nine guesses. Analyse keyed in a full game to a
-  solve. Console clean throughout.
+- `node verify-all-games.js` — unchanged: total 5801, average 4.4761, worst 5,
+  distribution 1/6/62/533/694. The solver was not touched.
+- `node verify-i18n.js` — **new**. Key parity 105/105, then 608 generated strings swept in
+  both languages: move 1, all eleven answers to 1122 / 3344 / 5656, non-22 openings, the
+  solver's line to the end for 36 secrets, a stubborn player five guesses deep, both
+  banners, and every key rendered with arguments. Fails on `undefined`, on Latin surviving
+  into Chinese prose, and on Chinese leaking into English. Passes clean.
+- A separate scan for numerals butting against Han characters found 46 sites in
+  `M2WHY_ZH`; all fixed, scan now reports 0.
+- Browser, both languages: desktop and 375px, all three tabs. Analyse keyed in 1122 and the
+  fourteen answer counts read 256/256/96/16/1/256/208/36/**0**/114/32/4/20/1, matching
+  `solver-decision-table.md`. Play mode run out to the nine-guess banner. Language switched
+  mid-game in coach and in play — board preserved both times. Reload comes back in the saved
+  language. Console clean throughout.
 
 ## Known gaps (unchanged from CLAUDE.md, plus one)
 - `og.png`, `favicon.svg`, `icon-32.png`, `icon-180.png` are still missing from the repo,
   so the tab icon and link previews are broken.
 - **Mobile guess bar overflows at 375px.** Six 44px pegs plus gaps plus an 88px Play
   button needs ~424px inside a 375px screen, so Play is clipped off the right edge.
-  Pre-existing, affects every mode, not yet fixed. One-line fix available.
+  Pre-existing, affects every mode, not yet fixed. One-line fix available. The
+  translation does not change it — 出手 is narrower than Play, so Chinese clips slightly
+  less, not more.
 - The loading bar only advances while the tab is visible (`requestAnimationFrame`), so
   opening the page in a background tab looks stalled until you click over to it.
 
-## Open question for Galvin
+## Open questions for Galvin
+
+The Chinese copy is a full translation, not a machine pass — the eleven move-2
+explanations and the move-1 copy were rewritten in Chinese rather than mapped word for
+word, so the reasoning reads naturally. Worth a read-through by a native speaker before
+you push it in front of a Chinese audience; the figures are all verified, the phrasing is
+my judgement.
+
+Mastermind is glossed as 珠玑妙算 (the common Chinese name). If you prefer 万能码 or want
+it left as plain Mastermind, that is one line in CLAUDE.md and one in STR.
+
 CLAUDE.md says UI copy uses British spelling; he asked for a tab named "Analyze".
 Shipped as **Analyse**. One-word change if he wants the American spelling.
