@@ -55,6 +55,14 @@ tabs. Desktop: tabs left, buttons right, flush with the grid edge (measured 967p
 967px grid). Mobile: buttons stack directly under the tabs, both visible without scrolling.
 In analyse they now sit 400px *above* the entry grid instead of 2,000px below it.
 
+## Middlegame and endgame copy (2026-09-04)
+Moves 3 onward now read the position rather than the move number: the three middlegame
+shapes, the surviving codes printed as chips when 5 or fewer remain, a "whatever comes back
+you will know the code" line on `worst===1`, a note when the player holds more codes than
+the solver's line ever does, and a "the five-guess guarantee is spent" line from guess 5.
+All of it survives imperfect play, which was the point — a player who wanders can hold 625
+codes on move 4, so nothing keys on the move number. Figures and triggers in CLAUDE.md.
+
 ## Coach copy for move 2 (2026-09-04)
 Eleven hand-written explanations, one per answer to a two-and-two opening, each split into
 "what you now know" (fires after any 22-shaped opening, colours and slots substituted) and

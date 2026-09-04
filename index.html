@@ -186,6 +186,10 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .coach p+p{margin-top:8px;color:var(--ink-dim);font-size:13px}
 .coach .inline{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
 .coach .inline span{width:16px;height:16px;border-radius:50%}
+.coach .cands{display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:-6px}
+.coach .cands .inline{margin:0;padding:3px 5px;border-radius:8px;background:var(--board-deep);
+  box-shadow:inset 0 0 0 1px var(--rule);vertical-align:0}
+.coach .cands .inline span{width:13px;height:13px}
 .coach .il{vertical-align:-5px}
 .coach.good{border-left-color:#4FBF7F}
 .coach.bad{border-left-color:#F2A03D}
@@ -1012,18 +1016,89 @@ function lastAnswer(){
     ' a colour you have not tested. '+placed();
 }
 
-function nextLine(){
-  const st=currentState();
+/* ── The middlegame and the endgame ─────────────────────────────────────────
+   Nothing below keys on the move number. A player who wanders off the solver's line
+   reaches these positions later, or never, and must not be told something false —
+   "by move 4 you are certain" is only true of the solver's own play. Measured: a
+   player who merely keeps guessing something still consistent lands on the same
+   median (3 codes at move 4) but has more than 7 left in 17% of games, and needs a
+   sixth guess in 15%. So the triggers are worst===1, cands.length and SOLVERCAP. */
+
+/* the most the solver's own line ever holds at the start of each move.
+   Computed over every reachable state: 1296 / 256 / 46 / 7 / 1. */
+const SOLVERCAP=[1296,256,46,7,1];
+
+/* which part of the colour question is left — the three shapes a middlegame takes */
+function positionNote(cands){
+  const st=currentState(), gu=st.guesses[st.guesses.length-1];
+  /* lastAnswer() already says this when the previous answer filled all four holes */
+  const toldAlready=gu&&FB[gu.fb].b+FB[gu.fb].w===4;
+  const A=analyze(cands), inC=[], out=[], open=[];
+  for(let c=0;c<6;c++){ if(A.present[c]) inC.push(c); else if(A.absent[c]) out.push(c); else open.push(c); }
+  const known=(inC.length?nameList(inC)+' in the code':'')+
+              (inC.length&&out.length?', ':'')+
+              (out.length?nameList(out)+' ruled out':'');
+  if(!open.length)
+    return toldAlready?'':'Every colour is settled — '+known+'.';
+  if(open.length<=2)
+    return 'Almost there'+(known?': '+known:'')+', and only '+nameListOr(open)+' still a question.';
+  return 'Still a hunt'+(known?': '+known:'')+', and '+NUM(open.length)+' colours still open.';
+}
+
+/* few enough to see the whole remaining world at once */
+function survivorList(cands){
+  if(cands.length<2||cands.length>5) return '';
+  let s='';
+  for(let i=0;i<cands.length;i++) s+=pegSpan(cands[i]);
+  return '<p>All '+NUM(cands.length)+' of them: <span class="cands">'+s+'</span></p>';
+}
+
+/* worst case 1: the answer is forced next turn whatever comes back */
+function certaintyNote(cands,best){
+  if(best.worst!==1||cands.length<2) return '';
+  return best.inSet
+    ? 'Whatever comes back, you will know the code — and '+pegSpan(best.g)+' is one of the '+cands.length+
+      ', so it is a free 1 in '+cands.length+' shot at ending it here.'
+    : 'Whatever comes back, you will know the code. No code that could win tells all '+NUM(cands.length)+
+      ' apart, so the solver gives up its free shot to be certain next turn rather than risk a sixth guess.';
+}
+
+/* past the five-guess promise: say so plainly, once it is actually true */
+function guaranteeNote(cands,n){
+  if(n<4||cands.length<2) return '';
+  return '<p>This is guess '+NUM(n+1)+' and '+NUM(cands.length)+' codes still fit'+
+    (cands.length<=20 ? ', so you can still win it here — a 1 in '+cands.length+' shot' : '')+
+    '. The five-guess guarantee is spent; Knuth’s rule never reaches this position.</p>';
+}
+
+/* a position the solver's own line never occupies */
+function behindNote(cands,n){
+  const cap=n<SOLVERCAP.length?SOLVERCAP[n]:1;
+  if(cands.length<=cap) return '';
+  return '<p>'+NUM(cands.length)+' codes on guess '+NUM(n+1)+'. Knuth’s rule is never worse than '+NUM(cap)+
+    ' here. Open with the suggestion and take it each turn, and five guesses always covers it.</p>';
+}
+
+/* the body every path shares, so grading and rewinding say the same thing */
+function adviceBody(){
+  const st=currentState(), best=ranking[0];
   if(st.cands.length===1)
     return '<p>Only one code fits all '+st.guesses.length+' answers. This is it: '+pegSpan(st.cands[0])+'</p>';
-  const b=ranking[0];
-  if(b.inSet && b.worst===1)
-    return '<p><span class="num">'+st.cands.length+'</span> codes left, and any guess narrows it to one. Play '+
-      pegSpan(b.g)+' \u2014 a 1 in '+st.cands.length+' shot to end it here, certain next turn either way.</p>';
-  return '<p><span class="num">'+st.cands.length+'</span> codes still fit. Play '+pegSpan(b.g)+
-    ' next \u2014 worst case <span class="num">'+b.worst+'</span>. So: '+shortPlan(st.cands,b.g)+'.</p>'+
-    (plan(b.g)?'<p>'+plan(b.g)+'</p>':'');
+  const cert=certaintyNote(st.cands,best);
+  const gn=guaranteeNote(st.cands,st.guesses.length);
+  const bn=gn?'':behindNote(st.cands,st.guesses.length);
+  const look=cert?'':plan(best.g);
+  const pos=positionNote(st.cands);
+  return (pos?'<p>'+pos+'</p>':'')+
+    survivorList(st.cands)+
+    '<p>Play '+pegSpan(best.g)+' — whatever comes back, at most '+NUM(best.worst)+' of the '+st.cands.length+
+      ' codes '+(best.worst===1?'survives':'survive')+'. So: '+shortPlan(st.cands,best.g)+'.</p>'+
+    '<p>'+(cert||(best.inSet?'It could still be the answer outright.'
+      :'It cannot be the answer — it just splits the field better than anything that can.'))+'</p>'+
+    gn+bn+(look?'<p>'+look+'</p>':'');
 }
+
+function nextLine(){ return adviceBody(); }
 
 /* ── Move 2 after a two-and-two opening ─────────────────────────────────────
    Eleven hand-written explanations, each in two halves.
@@ -1188,19 +1263,8 @@ function advise(){
   }
   const m2=moveTwo();
   if(m2){ setCoach(m2+(plan(ranking[0].g)?'<p>'+plan(ranking[0].g)+'</p>':'')); return; }
-  const best=ranking[0];
-  if(best.inSet && best.worst===1){
-    setCoach('<p><span class="num">'+st.cands.length+'</span> codes left, and any guess narrows it to one. '+
-      'So play one that could win: '+pegSpan(best.g)+'.</p>'+
-      '<p>A 1 in '+st.cands.length+' shot to end it here. If it misses, the answer is forced next turn.</p>','good');
-    return;
-  }
-  const note=best.inSet?'It could still be the answer outright.':'It cannot be the answer \u2014 it just splits the field better than anything that can.';
   const la=lastAnswer();
-  setCoach((la?'<p>'+la+'</p>':'')+
-    '<p>Play '+pegSpan(best.g)+' \u2014 whatever comes back, at most <span class="num">'+best.worst+'</span> of the '+st.cands.length+' codes survive. So: '+shortPlan(st.cands,best.g)+'.</p>'+
-    '<p>'+note+'</p>'+
-    (plan(best.g)?'<p>'+plan(best.g)+'</p>':''));
+  setCoach((la?'<p>'+la+'</p>':'')+adviceBody(), ranking[0].worst===1?'good':'');
 }
 
 function gradeOpening(played,worstAt){

@@ -78,6 +78,44 @@ as `.a-ctrl` at the foot of the page, ~2,500px below the analyse entry grid, whi
 you actually use them. The `ctrl` area and the `.spacer` that right-aligned New code inside
 that old row are both gone — do not re-add `ctrl` to any `grid-template-areas`.
 
+## Coach copy — the middlegame and endgame (added 2026-09-04)
+
+Everything after move 2 is keyed on **the position, never the move number**. This is not
+a style choice. "By move 4 you are certain" is true only of the solver's own line, and
+Coach and Analyse both let the player play anything. Measured over 3,000 games:
+
+| at the start of move 4 | solver | player who always guesses something still possible | player ignoring the answers |
+|---|---|---|---|
+| codes left, median | 3 | 3 | 6 |
+| most it can be | 7 | 32 | 111 |
+| more than 7 left | never | **17% of games** | 43% |
+
+Play `1111` three times and hear "no pegs" each time and **625** codes are alive on move 4.
+A consistent guesser averages 4.65 guesses and needs a sixth in 15% of games.
+
+`adviceBody()` is the shared body — `advise()` and `nextLine()` both call it, so grading,
+rewinding and mode-switching all say the same thing. Its parts:
+
+- `positionNote()` — the three middlegame shapes, chosen by how many colours are neither
+  confirmed in nor ruled out: none (`Every colour is settled`), one or two (`Almost there`),
+  three or more (`Still a hunt`). Suppressed when the previous answer filled all four holes,
+  because `lastAnswer()` has already said it.
+- `survivorList()` — prints every remaining code as a chip when there are 2–5 of them.
+  Reaches 26 of the 94 move-3 positions and 293 of the 320 move-4 ones. The `.cands` chip
+  styling is load-bearing: twenty bare pegs in a row read as one stripe.
+- `certaintyNote()` — fires on `worst===1`, not on a move number. True in 40 of 94 move-3
+  positions and **all 320** move-4 ones. Has a second voice for `!inSet`: 31 of those 320
+  give up a free winning shot because no candidate tells the field apart, which is the
+  `2b2w` dead-peg lesson returning.
+- `behindNote()` — fires when `cands.length` exceeds `SOLVERCAP[guesses.length]`.
+  `SOLVERCAP = [1296, 256, 46, 7, 1]` is the most the solver's own line ever holds at the
+  start of each move, computed over every reachable state. Do not adjust these by hand.
+- `guaranteeNote()` — fifth guess or later with more than one code left. The guarantee is
+  genuinely spent there and the solver never reaches it. Offers the 1-in-N shot only when
+  N ≤ 20; a 1-in-256 shot is not worth mentioning.
+
+Move 5 needs nothing: all 694 states the solver reaches have exactly one candidate.
+
 ## Coach copy — move 2 (added 2026-09-04)
 
 Eleven hand-written explanations, one per reachable answer to a two-and-two opening,
