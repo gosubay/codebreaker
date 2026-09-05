@@ -1,0 +1,316 @@
+<title>Codebreaker Table</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EDE7DB; --panel:#FAF6EE; --panel-2:#F1EADC; --line:#D6CCBA;
+  --ink:#241E17; --ink-dim:#5B5145; --ink-faint:#8C8172;
+  --brass:#8A6516; --brass-soft:#E4D6B4;
+  --sky3d:#E4DCCC; --floor3d:#D3C9B6; --amb:0.85; --key:1.45;
+  --p1:#D33F3A; --p2:#E5772A; --p3:#EFC93D; --p4:#3FA35B; --p5:#3A78C4; --p6:#8A54B8;
+  --shadow:0 16px 34px -24px rgba(60,45,20,.55);
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#12100E; --panel:#1A1611; --panel-2:#221C15; --line:#332A20;
+    --ink:#EDE6DC; --ink-dim:#A29484; --ink-faint:#6F6355;
+    --brass:#E8B33C; --brass-soft:#3A2F1B;
+    --sky3d:#131110; --floor3d:#0A0908; --amb:0.34; --key:2.1;
+    --shadow:0 18px 40px -22px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#12100E; --panel:#1A1611; --panel-2:#221C15; --line:#332A20;
+  --ink:#EDE6DC; --ink-dim:#A29484; --ink-faint:#6F6355;
+  --brass:#E8B33C; --brass-soft:#3A2F1B;
+  --sky3d:#131110; --floor3d:#0A0908; --amb:0.34; --key:2.1;
+  --shadow:0 18px 40px -22px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+.app{display:grid;grid-template-columns:1fr 336px;grid-template-rows:auto 1fr;
+  height:100vh;min-height:560px}
+.masthead{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;
+  padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.wordmark{font-family:var(--f-display);font-weight:800;font-size:19px;
+  letter-spacing:-.02em;margin:0}
+.tagline{font-family:var(--f-mono);font-size:12px;color:var(--ink-faint);
+  letter-spacing:.02em}
+.themer{margin-left:auto;background:none;border:1px solid var(--line);color:var(--ink-dim);
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 10px;border-radius:3px;cursor:pointer}
+.themer:hover{color:var(--ink);border-color:var(--ink-faint)}
+
+.stage{position:relative;background:var(--sky3d);overflow:hidden;min-width:0}
+#gl{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+
+.readout{position:absolute;top:16px;left:18px;pointer-events:none;
+  font-family:var(--f-mono);font-size:var(--fs-sm,13px)}
+.readout .num{font-family:var(--f-display);font-weight:800;font-size:34px;
+  line-height:1;letter-spacing:-.02em;color:var(--brass);
+  font-variant-numeric:tabular-nums}
+.readout .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-faint);margin-top:3px}
+
+.caption{position:absolute;left:0;right:0;bottom:0;padding:16px 20px 18px;
+  background:linear-gradient(to top,var(--sky3d) 55%,transparent);
+  font-family:var(--f-display);font-weight:600;font-size:17px;line-height:1.35;
+  text-wrap:balance;min-height:64px;display:flex;align-items:flex-end}
+.caption:empty{display:none}
+
+.views{position:absolute;top:16px;right:16px;display:flex;gap:6px}
+.views button{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;padding:6px 10px;border-radius:3px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);color:var(--ink-dim)}
+.views button[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);
+  color:var(--ground)}
+
+.rail{background:var(--panel);border-left:1px solid var(--line);
+  display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.block{padding:16px 18px;border-bottom:1px solid var(--line)}
+.block:last-child{border-bottom:0}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-faint);margin:0 0 10px}
+
+.modes{display:flex;gap:6px}
+.modes button{flex:1;font-family:var(--f-body);font-weight:500;font-size:13px;
+  padding:8px 4px;border-radius:3px;cursor:pointer;background:var(--panel-2);
+  border:1px solid var(--line);color:var(--ink-dim)}
+.modes button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);
+  color:var(--panel)}
+
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.sw{aspect-ratio:1;border-radius:50%;border:2px solid transparent;cursor:pointer;
+  box-shadow:inset 0 -4px 8px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.4)}
+.sw:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.sw:hover{transform:translateY(-2px)}
+.sw{transition:transform .12s ease}
+
+.guessrow{display:flex;align-items:center;gap:8px;margin-top:12px}
+.slot{width:30px;height:30px;border-radius:50%;border:1.5px dashed var(--line);
+  background:var(--panel-2)}
+.slot.filled{border-style:solid;border-color:transparent;
+  box-shadow:inset 0 -4px 8px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.4)}
+.acts{display:flex;gap:8px;margin-top:12px}
+.acts button{flex:1;font-family:var(--f-body);font-weight:600;font-size:13px;
+  padding:9px;border-radius:3px;cursor:pointer;border:1px solid var(--line);
+  background:var(--panel-2);color:var(--ink)}
+.acts button.primary{background:var(--brass);border-color:var(--brass);color:var(--ground)}
+.acts button:disabled{opacity:.4;cursor:not-allowed}
+
+.log{list-style:none;margin:0;padding:0;font-family:var(--f-mono);font-size:13px;
+  max-height:210px;overflow-y:auto}
+.log li{display:flex;align-items:center;gap:10px;padding:5px 0;
+  border-bottom:1px solid var(--line)}
+.log li:last-child{border-bottom:0}
+.log .n{color:var(--ink-faint);width:16px;font-variant-numeric:tabular-nums}
+.log .code{letter-spacing:.16em;font-weight:600}
+.log .fb{margin-left:auto;display:flex;gap:3px}
+.log .kp{width:9px;height:9px;border-radius:50%;border:1px solid var(--line)}
+.log .kp.b{background:var(--ink)}
+.log .kp.w{background:var(--panel-2)}
+.log .empty{color:var(--ink-faint);font-style:italic}
+
+.note{font-size:13px;color:var(--ink-dim);margin:10px 0 0}
+.note strong{color:var(--ink);font-weight:600}
+.cams{display:flex;gap:6px;flex-wrap:wrap}
+.cams button{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;padding:6px 9px;border-radius:3px;cursor:pointer;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim)}
+.cams button:hover{color:var(--ink)}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.nums label{display:flex;flex-direction:column;gap:3px;font-family:var(--f-mono);
+  font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint)}
+.nums input{font-family:var(--f-mono);font-size:13px;padding:5px 7px;border-radius:3px;
+  border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+  font-variant-numeric:tabular-nums;width:100%}
+.nums input:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.field span{font-family:var(--f-mono);font-size:10px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.field input,.field textarea{font-family:var(--f-mono);font-size:13px;padding:7px 8px;
+  border-radius:3px;border:1px solid var(--line);background:var(--panel-2);
+  color:var(--ink);width:100%;resize:vertical}
+.field textarea{line-height:1.5;min-height:66px}
+.field input:focus-visible,.field textarea:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row2 button,.rowfull button{font-family:var(--f-body);font-weight:500;font-size:13px;
+  padding:8px 4px;border-radius:3px;cursor:pointer;background:var(--panel-2);
+  border:1px solid var(--line);color:var(--ink)}
+.rowfull{display:flex;gap:6px;margin-top:6px}
+.rowfull button{flex:1}
+.row2 button.on,.rowfull button.on{background:var(--brass);border-color:var(--brass);color:var(--ground)}
+.moves{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.moves button{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;padding:7px 4px;border-radius:3px;cursor:pointer;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim)}
+.moves button:hover{color:var(--ink)}
+.sel{font-family:var(--f-mono);font-size:12px;padding:6px 7px;border-radius:3px;
+  border:1px solid var(--line);background:var(--panel-2);color:var(--ink);width:100%}
+body.plate .masthead,body.plate .rail,body.plate .readout,
+body.plate .views,body.plate .caption{display:none !important}
+body.plate .app{grid-template-columns:1fr;grid-template-rows:1fr;height:100vh}
+body.plate .stage{background:#000;display:flex;align-items:center;justify-content:center}
+body.plate #gl{width:auto;height:100%;max-width:100%;object-fit:contain}
+.exit{position:fixed;top:12px;right:12px;z-index:9;display:none;
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 11px;border-radius:3px;cursor:pointer;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff}
+body.plate .exit{display:block}
+.warn{color:var(--brass);font-size:12px;font-family:var(--f-mono);margin:8px 0 0;min-height:16px}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto minmax(320px,52vh) auto;
+    height:auto;min-height:100vh}
+  .rail{border-left:0;border-top:1px solid var(--line);overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+
+<button class="exit" id="exitPlate" type="button">Exit plate</button>
+<div class="app">
+  <header class="masthead">
+    <h1 class="wordmark">Codebreaker Table</h1>
+    <span class="tagline">6 colours &middot; 4 pegs &middot; 1296 codes</span>
+    <button class="themer" id="themer" type="button">Theme</button>
+  </header>
+
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div class="readout">
+      <div class="num" id="count">1296</div>
+      <div class="lbl" id="countLbl">codes still possible</div>
+    </div>
+    <div class="views">
+      <button type="button" id="vBoard" aria-pressed="true">Board</button>
+      <button type="button" id="vCloud" aria-pressed="false">Codespace</button>
+    </div>
+    <div class="caption" id="caption"></div>
+  </div>
+
+  <aside class="rail">
+    <div class="block">
+      <p class="eyebrow">Mode</p>
+      <div class="modes">
+        <button type="button" id="mPlay" aria-pressed="true">Play</button>
+        <button type="button" id="mStrat" aria-pressed="false">Strategy</button>
+        <button type="button" id="mDirect" aria-pressed="false">Director</button>
+      </div>
+      <p class="note" id="modeNote">Pick 4 colours and submit. Repeats allowed.</p>
+    </div>
+
+    <div class="block" id="pickBlock">
+      <p class="eyebrow">Your guess</p>
+      <div class="swatches" id="swatches"></div>
+      <div class="guessrow" id="guessRow"></div>
+      <div class="acts">
+        <button type="button" id="undo">Undo</button>
+        <button type="button" class="primary" id="submit" disabled>Submit</button>
+      </div>
+    </div>
+
+    <div class="block" id="dirBlock" style="display:none">
+      <p class="eyebrow">Director</p>
+      <label class="field"><span>Secret code</span>
+        <input id="secretIn" maxlength="4" inputmode="numeric" spellcheck="false"></label>
+      <label class="field"><span>Board state</span>
+        <textarea id="stateBox" spellcheck="false"></textarea></label>
+      <div class="acts">
+        <button type="button" id="applyState">Apply</button>
+        <button type="button" class="primary" id="copyState">Copy</button>
+      </div>
+      <p class="warn" id="stateWarn"></p>
+      <p class="note">Rows are <strong>1122=2b1w</strong>, separated by <strong>/</strong>. Feedback is optional; leave it off and it is scored against the secret.</p>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">History</p>
+      <ul class="log" id="log"><li class="empty">No guesses yet</li></ul>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Shot</p>
+      <div class="row2">
+        <button type="button" id="setA">Set A</button>
+        <button type="button" id="setB">Set B</button>
+      </div>
+      <div class="nums" style="margin-top:8px">
+        <label>Seconds<input id="shotDur" type="number" step="0.25" value="3"></label>
+        <label>Ease<select id="shotEase" class="sel">
+          <option value="inout">Ease in-out</option>
+          <option value="out">Ease out</option>
+          <option value="linear">Linear</option>
+        </select></label>
+      </div>
+      <div class="rowfull"><button type="button" id="playShot" class="on">Play shot</button></div>
+      <p class="eyebrow" style="margin:14px 0 0">Build a move</p>
+      <div class="moves">
+        <button type="button" data-move="push">Push in</button>
+        <button type="button" data-move="pull">Pull back</button>
+        <button type="button" data-move="orbit">Orbit</button>
+        <button type="button" data-move="crane">Crane down</button>
+        <button type="button" data-move="reveal">Rise reveal</button>
+        <button type="button" data-move="drift">Slow drift</button>
+      </div>
+      <p class="note">A move fills A and B from where you are now. Then Play.</p>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Look</p>
+      <div class="row2">
+        <button type="button" id="toonBtn">Cel shading</button>
+        <button type="button" id="outlineBtn">Outlines</button>
+      </div>
+      <label class="field" style="margin-top:10px"><span>Background</span>
+        <select id="bgSel" class="sel">
+          <option value="studio">Studio</option>
+          <option value="green">Chroma green</option>
+          <option value="blue">Chroma blue</option>
+          <option value="alpha">Transparent</option>
+        </select></label>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Output</p>
+      <div class="rowfull"><button type="button" id="plateBtn">Plate 1080&times;1920</button></div>
+      <div class="rowfull">
+        <button type="button" id="savePng">Save frame</button>
+        <button type="button" id="recBtn">Record shot</button>
+      </div>
+      <p class="warn" id="outWarn"></p>
+      <p class="note">Record steps the shot at a fixed 30fps, so the file is frame-accurate whatever the machine does. Saving asks you to confirm the file.</p>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Camera</p>
+      <div class="nums">
+        <label>Distance<input id="camR" type="number" step="0.5"></label>
+        <label>Yaw<input id="camT" type="number" step="0.02"></label>
+        <label>Tilt<input id="camP" type="number" step="0.02"></label>
+        <label>Height<input id="camY" type="number" step="0.1"></label>
+        <label>Lens (fov)<input id="camF" type="number" step="1"></label>
+      </div>
+      <div class="cams">
+        <button type="button" data-cam="hero">Hero</button>
+        <button type="button" data-cam="top">Top down</button>
+        <button type="button" data-cam="close">Close</button>
+        <button type="button" data-cam="spin">Spin</button>
+      </div>
+      <p class="note">Drag to orbit, scroll to zoom.</p>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Reset</p>
+      <div class="acts"><button type="button" id="newGame">New code</button></div>
+    </div>
+  </aside>
+</div>
